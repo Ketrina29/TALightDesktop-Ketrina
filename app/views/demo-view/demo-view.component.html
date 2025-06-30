@@ -1,0 +1,25 @@
+<script>
+function testxx(){
+    alert(1)
+}
+</script>
+<script src="/assets/xxhsum.js" type="javascript"></script>
+<div style="display:flex; flex-direction: column">
+    <div>
+        <div>
+            API Demo
+        </div>
+        <div>
+            <button (click)="apiProblemList()">Problem List</button>
+            <button (click)="apiGetAttachment()">Get Attachment</button>
+            <button (click)="apiConnectOld()">Connect Old</button>
+            <button (click)="apiConnect()">Connect</button>
+            <button (click)="hashTest()">Hash</button>
+        </div>
+    </div>
+    
+    
+    <div>
+        <pre>{{output}}</pre>
+    </div>
+</div>

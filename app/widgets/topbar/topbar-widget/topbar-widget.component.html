@@ -1,0 +1,113 @@
+<div class="tal-topbar" [class.blur]="isBlurred">
+  <!-- Left Section: Brand and Add Tab Button -->
+  <div class="topbar-left">
+    <div class="tal-brand">
+      <h1>Projects</h1>
+    </div>
+    <button
+      [disabled]="projects.length >= 10"
+      type="button"
+      class="tal-square-button addTabButton"
+      icon="pi pi-plus"
+      pButton
+      pRipple
+      pTooltip="Aggiungi una scheda"
+      (click)="openAddProjectDialog()"
+    ></button>
+  </div>
+
+  <!-- Center Section: Tab Menu with Drag & Drop -->
+  <div class="topbar-center">
+    <p-tabMenu 
+      [scrollable]="scrollable_prop" 
+      [model]="filteredItems" 
+      [activeItem]="activeItem" 
+      styleClass="tabMenu"
+    >
+      <ng-template pTemplate="item" let-item>
+        <div 
+          class="tab" 
+          (click)="setCurrentTab(item)" 
+          draggable="true" 
+          (dragstart)="onDragStart($event, item)"
+          (dragover)="onDragOver($event)"
+          (drop)="onDrop($event, item)"
+        >
+          {{ item.label }}
+          <button 
+            class="buttonClose" 
+            type="button" 
+            pButton 
+            pRipple 
+            icon="pi pi-times" 
+            (click)="confirmDeleteProject(item.id); $event.stopPropagation();"
+          ></button>
+        </div>
+      </ng-template>
+    </p-tabMenu>
+  </div>
+<!-- Add Project Dialog -->
+<p-dialog 
+  header="Aggiungi Progetto" 
+  [(visible)]="addProjectDialogVisible" 
+  [modal]="true" 
+  [closable]="false"
+>
+  <div class="p-field">
+    <label for="projectName">Nome Progetto</label>
+    <input 
+      id="projectName" 
+      type="text" 
+      pInputText 
+      [(ngModel)]="newProjectName" 
+      placeholder="Inserisci il nome del progetto"
+    />
+  </div>
+  <div class="p-field">
+    <label for="language">Linguaggio di Programmazione</label>
+    <p-dropdown 
+      id="language" 
+      [options]="languages" 
+      [(ngModel)]="selectedLanguage" 
+      placeholder="Seleziona una lingua"
+    ></p-dropdown>
+  </div>
+  <p-footer>
+    <button 
+      type="button" 
+      pButton 
+      label="Annulla" 
+      icon="pi pi-times" 
+      (click)="cancelAddProject()" 
+      class="p-button-text"
+    ></button>
+    <button 
+      type="button" 
+      pButton 
+      label="Aggiungi" 
+      icon="pi pi-check" 
+      (click)="confirmAddProject()" 
+      [disabled]="!newProjectName || !selectedLanguage"
+    ></button>
+  </p-footer>
+</p-dialog>
+
+  <!-- Right Section: Theme Toggle and Tutorial -->
+  <div class="topbar-right">
+    <button 
+      pButton 
+      icon="pi {{ changeThemIcon }}" 
+      class="tal-square-button" 
+      pTooltip="Cambia tema" 
+      (click)="toggleTheme()"
+    ></button>
+    <button 
+      pButton 
+      pTooltip="Mostra il tutorial" 
+      (click)="showTutorial()" 
+      class="tal-square-button" 
+      icon="pi pi-question-circle" 
+      *ngIf="isTutorialButtonVisible"
+    ></button>
+  </div>
+</div>
