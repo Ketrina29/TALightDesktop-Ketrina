@@ -171,5 +171,15 @@ export class GithubApiService {
     })
     
   }
+public getRepoTree(username: string, repository: string, sha: string): Promise<any> {
+  const url = `https://api.github.com/repos/${username}/${repository}/git/trees/${sha}?recursive=1`;
+  return fetch(url, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+      'Content-Type': 'application/json',
+    }
+  }).then(res => res.json());
+}
 
 }

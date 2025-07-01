@@ -1,14 +1,14 @@
 import { Component, EventEmitter, Output, NgZone, OnInit } from '@angular/core';
 import { TerminalService } from 'primeng/terminal';
 import { ArgDescriptor, ParamsMap, ProblemDescriptor, ProblemList, ProblemMap, ServiceDescriptor, ServiceMap } from '../../../services/problem-manager-service/problem-manager.types';
-import { Commands } from 'src/app/services/api-service/api.commands';
-import { ProjectEnvironment } from 'src/app/services/project-manager-service/project-manager.types';
-import { FsNodeFile } from 'src/app/services/fs-service/fs.service.types';
-import { TerminalApiService } from 'src/app/services/terminal-api-service/terminal-api.service';
-import { Meta } from 'src/app/services/api-service/api.service';
-import { Packets } from 'src/app/services/api-service/api.packets';
+import { Commands } from '../../../services/api-service/api.commands';
+import { ProjectEnvironment } from '../../../services/project-manager-service/project-manager.types';
+import { FsNodeFile } from '../../../services/fs-service/fs.service.types';
+import { TerminalApiService } from '../../../services/terminal-api-service/terminal-api.service';
+import { Meta } from '../../../services/api-service/api.service';
+import { Packets } from '../../../services/api-service/api.packets';
 
-import { ProjectManagerService } from 'src/app/services/project-manager-service/project-manager.service';
+import { ProjectManagerService } from '../../../services/project-manager-service/project-manager.service';
 import { TutorialService } from '../../../services/tutorial-service/tutorial.service';
 
 @Component({
@@ -61,6 +61,7 @@ export class TerminalWidgetComponent implements OnInit {
   private commandSplit!: string[];
   private connectParams = {};
   isBlurred: boolean = false;
+  commandHandlerSubject: any;
 
   ////////////////////////////////////////////////////////////////////////
 
@@ -402,14 +403,15 @@ export class TerminalWidgetComponent implements OnInit {
     }
     else if (this.commandSplit.length == 6) {
       this.response = "";
-      let condition = undefined;
+      // Fix: Correctly type 'condition'
+      let condition: ((problem: any) => boolean) | undefined = undefined;
       if (this.commandSplit[4] == '-v' || this.commandSplit[4] == '--verbose') { condition = (problem: any) => problem.name == this.commandSplit[5]; }
       if (this.commandSplit[5] == '-v' || this.commandSplit[5] == '--verbose') { condition = (problem: any) => problem.name == this.commandSplit[4]; }
       if (condition != undefined) {
         let problemFound = this.problemList.find(condition);
         if (problemFound != undefined) {
           // eg. rtal -s <server-url> list -v problem_name OR rtal -s <server-url> list problem_name -v
-          var ArrayService: ServiceDescriptor[] = [];
+          let ArrayService: ServiceDescriptor[] = []; // Changed 'var' to 'let'
           problemFound.services.forEach(service => ArrayService.push(service))
           ArrayService.sort((a, b) => a.name.localeCompare(b.name));
           ArrayService.forEach(service => {

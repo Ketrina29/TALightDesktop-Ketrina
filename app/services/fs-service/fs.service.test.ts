@@ -5,6 +5,9 @@ import { FsNodeEmptyFolder, FsNodeFile, FsNodeFileList, FsNodeFolder, FsNodeList
 
 
 export class IndexeddbFsDriver implements FsServiceDriver {
+  clearDatabase() {
+    throw new Error('Method not implemented.');
+  }
   public driverName: string;
   public mountPoint: string = "";
   public fsRoot: FsNodeFolder = FsNodeEmptyFolder;

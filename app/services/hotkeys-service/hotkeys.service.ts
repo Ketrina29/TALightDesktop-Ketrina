@@ -6,82 +6,56 @@ import { ProjectManagerService } from '../project-manager-service/project-manage
   providedIn: 'root'
 })
 export class HotkeysService {
-  
+
   private hotkeysSubject = new Subject<KeyboardEvent>();
 
-  public hotkeysAction = new EventEmitter<any>();
-  public onHotkeysReceived = new EventEmitter<any>();
+  public hotkeysAction = new EventEmitter<'save' | 'export' | 'run' | 'test'>();
+  public onHotkeysReceived = new EventEmitter<KeyboardEvent>();
   public configModified = false;
 
-  constructor(private pms: ProjectManagerService ) {
-    // register keyboard event listener when the service is initialized
+  constructor(private pms: ProjectManagerService) {
     this.registerHotkeysEvents();
   }
 
-  // emit keyboard events
-  public emitHotkeysEvent(event: KeyboardEvent) {
+  // Emiton eventin e tastierës për ata që janë të regjistruar
+  public emitHotkeysEvent(event: KeyboardEvent): void {
     this.hotkeysSubject.next(event);
+    this.getCorrectHotkey(event); // Opsional: direkt trigger për veprime
   }
 
-  // subscribe to hotkeys events
+  // Jep Observable për t’u abonuar nga komponentët
   public registerHotkeysEvents(): Observable<KeyboardEvent> {
     return this.hotkeysSubject.asObservable();
   }
 
-  public getCorrectHotkey(event:KeyboardEvent) {
-    let project = this.pms.getCurrentProject();
-    if (!project) { return; }
-    
-    let config = project.config
+  // Analizon tastin dhe emit veprimin përkatës
+  public getCorrectHotkey(event: KeyboardEvent): void {
+    const project = this.pms.getCurrentProject();
+    if (!project || !project.config || event.repeat) return;
 
-  // avoid repetition, you can perform the action only once at a time
-  if(event.repeat === false){
+    const cfg = project.config;
 
-    if(config != null){
+    const matchesCombo = (combo: any): boolean => {
+      return (
+        event.ctrlKey === combo.Control &&
+        event.altKey === combo.Alt &&
+        event.shiftKey === combo.Shift &&
+        event.key === combo.Key
+      );
+    };
 
-      // check if CTRL is pressed
-      if(event.ctrlKey === config.HOTKEY_SAVE.Control || event.ctrlKey === config.HOTKEY_EXPORT.Control){
-      
-        // check if S is pressed
-        if(event.key === config.HOTKEY_SAVE.Key){
-          event.preventDefault();
-          console.log("CTRL+S pressed");
-          this.hotkeysAction.emit('save');
-        
-        // check if E is pressed
-        }else if(event.key === config.HOTKEY_EXPORT.Key){
-          event.preventDefault();
-          console.log("CTRL+E pressed");
-          this.hotkeysAction.emit('export');
-        }
-      
-        // check if F8 is pressed
-        }else if(event.key === config.HOTKEY_RUN.Key){
-          event.preventDefault();
-          console.log("F8 pressed");
-          this.hotkeysAction.emit('run');
-        
-        // check if F9 is pressed 
-        }else if(event.key === config.HOTKEY_TEST.Key){
-          event.preventDefault();
-          console.log("F9 pressed");
-          this.hotkeysAction.emit('test');
-        }    
-      }
+    if (matchesCombo(cfg.HOTKEY_SAVE)) {
+      event.preventDefault();
+      this.hotkeysAction.emit('save');
+    } else if (matchesCombo(cfg.HOTKEY_EXPORT)) {
+      event.preventDefault();
+      this.hotkeysAction.emit('export');
+    } else if (matchesCombo(cfg.HOTKEY_RUN)) {
+      event.preventDefault();
+      this.hotkeysAction.emit('run');
+    } else if (matchesCombo(cfg.HOTKEY_TEST)) {
+      event.preventDefault();
+      this.hotkeysAction.emit('test');
     }
   }
-
-  /* public async addToConfig(project: ProjectEnvironment | null) {
-    
-    project?.config?.parseFile(project.config)
-  
-    if(project != null && project.config != null){
-      if(project.config.CONFIG_PATH != undefined){
-        await project.config.save(project.driver);
-        //project.driver.writeFile(project.config.CONFIG_PATH, string_config)
-      }
-    }
-
-    console.log("Updated config file: ", project?.config);
-  } */
 }

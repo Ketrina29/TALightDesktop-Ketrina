@@ -13,28 +13,72 @@ export class FsService {
   
   constructor(){
     console.log('FsService:constructor')
-     //TODO: Remove test driver FS from constructor
-    //this.registerDriver('example', new IndexeddbFsDriver());   
+    // Register the IndexeddbFsDriver in the constructor for testing purposes
+    this.registerDriver('indexeddb', new IndexeddbFsDriver());
   }
 
   registerDriver(name:string, driver: FsServiceDriver):boolean{
-    //if (name in this.drivers){return false;}
-    //alert('register: '+driver)
     this.drivers.set(name, driver);
-    //alert('register: '+driver.constructor.name+' | all: '+this.getDriverNames())
     return true;
   }
 
   getDriver(name:string): FsServiceDriver | undefined{
-    //alert(name + ' '  + this.getDriverNames() )
     if ( this.drivers.has(name) ){return this.drivers.get(name);}
-    alert(name + ' NOT found in: '  + this.getDriverNames() + " | getDriver: undefined !!!" )
+    console.warn(name + ' NOT found in: '  + this.getDriverNames() + " | getDriver: undefined !!!" ) // Use console.warn instead of alert
     return undefined
-    
   }
 
   getDriverNames(){
     return Array.from(this.drivers.keys());
+  }
+
+  // Delegate methods to the appropriate driver
+  async readDirectory(fullpath: string): Promise<FsNodeFolder | null> {
+    const driver = this.getDriver('indexeddb'); // Assuming 'indexeddb' is the default driver for these operations
+    if (driver) {
+      return driver.readDirectory(fullpath);
+    }
+    throw new Error('No file system driver registered.');
+  }
+
+  async delete(fullpath: string): Promise<boolean> {
+    const driver = this.getDriver('indexeddb');
+    if (driver) {
+      return driver.delete(fullpath);
+    }
+    throw new Error('No file system driver registered.');
+  }
+
+  async readFile(fullpath: string, binary?: boolean): Promise<string | ArrayBuffer | null> {
+    const driver = this.getDriver('indexeddb');
+    if (driver) {
+      return driver.readFile(fullpath, binary);
+    }
+    throw new Error('No file system driver registered.');
+  }
+
+  async writeFile(fullpath: string, content: string | ArrayBuffer): Promise<number> {
+    const driver = this.getDriver('indexeddb');
+    if (driver) {
+      return driver.writeFile(fullpath, content);
+    }
+    throw new Error('No file system driver registered.');
+  }
+
+  async createDirectory(fullpath: string): Promise<boolean> {
+    const driver = this.getDriver('indexeddb');
+    if (driver) {
+      return driver.createDirectory(fullpath);
+    }
+    throw new Error('No file system driver registered.');
+  }
+
+  async exists(fullpath: string): Promise<boolean> {
+    const driver = this.getDriver('indexeddb');
+    if (driver) {
+      return driver.exists(fullpath);
+    }
+    throw new Error('No file system driver registered.');
   }
 
   treeToList(root:FsNodeFolder){
@@ -216,5 +260,3 @@ export class xxhash{
       return xxhash.sharedInstance.XXH128(data,data.length)
   }
 }
-
-//xxhash.load()
