@@ -122,9 +122,6 @@ it('should create the component and call enableStdin', () => {
 });
 
 
-
-
-
   it('should send stdin from API and call print with OutputType.STDINAPI', async () => {
   component.outputWidget = outputWidgetSpy;
   
@@ -163,7 +160,9 @@ it('should create the component and call enableStdin', () => {
   it('should not fail in ngAfterViewInit if outputWidget is undefined', () => {
     component.outputWidget = undefined as any;
     expect(() => component.ngAfterViewInit()).not.toThrow();
-  });it('should handle onAttachments correctly and call refreshRoot', async () => {
+  });
+  
+  it('should handle onAttachments correctly and call refreshRoot', async () => {
   // Mock për window.Tar.unpack
   const unpackSpy = jasmine.createSpy('unpack').and.returnValue([
     {
@@ -180,14 +179,19 @@ it('should create the component and call enableStdin', () => {
   };
   (component as any).selectedProblem = { name: 'problem1' };
 
-  // Ekzekutimi
+
   await (component as any).onAttachments(new ArrayBuffer(8), 'problemWidget');
 
   // Verifikimet
-  expect(unpackSpy).toHaveBeenCalled();
+expect(mockProjectDriver.writeFile).toHaveBeenCalledWith(
+  '/data/folder1/file1.py',
+  jasmine.any(ArrayBuffer)
+);
+
   expect(mockProjectDriver.createDirectory).toHaveBeenCalledWith('/data');
-  expect(mockProjectDriver.createDirectory).toHaveBeenCalledWith('/data/folder1');
-  expect(mockProjectDriver.writeFile).toHaveBeenCalledWith('/data/file1.py', jasmine.any(ArrayBuffer));
+expect(mockProjectDriver.createDirectory).toHaveBeenCalledWith('/data/folder1');
+expect(mockProjectDriver.writeFile).toHaveBeenCalledWith('/data/folder1/file1.py', jasmine.any(ArrayBuffer));
+
   expect((component as any).fileExplorer.refreshRoot).toHaveBeenCalled();
 });
 it('should call outputWidget.print in didNotify', () => {

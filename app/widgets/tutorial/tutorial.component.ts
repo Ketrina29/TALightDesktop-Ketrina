@@ -1,78 +1,90 @@
-import { Component, OnInit, AfterViewInit } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnChanges, OnInit, Renderer2, SimpleChanges, ViewChild } from '@angular/core';
 import { TutorialService } from '../../services/tutorial-service/tutorial.service';
-
 @Component({
-  selector: 'app-tutorial',
-  template: `<p>TutorialComponent works!</p>`,
+  selector: 'tal-tutorial',
+  templateUrl: './tutorial.component.html',
+  styleUrls: ['./tutorial.component.scss'],
 })
-export class TutorialComponent implements OnInit, AfterViewInit {
-  isVisible = false;
-  indexCurrentTutorial = -1;
-  testo = '';
-  tutorialText = '';
-  backButtonDisabled = false;
 
-  constructor(private tutorialService: TutorialService) {}
+export class TutorialComponent implements AfterViewInit {
+  isVisible: boolean = false;
+  indexCurrentTutorial: number = -1
+  tutorialText = "";
+  backButtonDisabled = true;
+  testo = "Avanti"
+  theme = "light"
 
-  ngOnInit(): void {
-    this.tutorialService.onIndexTutorialChange.subscribe((index) => {
-      this.setIndex(index);
-    });
 
-    this.tutorialService.onTutorialChange.subscribe((step: any) => {
-      this.showTutorial(step);
-    });
-
-    this.tutorialService.onTutorialClose.subscribe(() => {
-      this.closeTutorial();
-    });
+  constructor(private tutorialService: TutorialService,) {
+    this.tutorialService.onTutorialChange.subscribe((tutorial) => { this.showTutorial(tutorial) })
+    this.tutorialService.onTutorialClose.subscribe(() => { this.closeTutorial() })
+    this.tutorialService.onIndexTutorialChange.subscribe((indexCurrentTutorials) => { this.setIndex(indexCurrentTutorials) })
+  }
+  // É sporca ma l'abbiamo fatto cosí perché é piú facile da capire, meno dispendioso in termini di tempo e risorse
+  // e non abbiamo bisogno di un componente in piú
+  ngAfterViewInit() {
+    setTimeout(() => {
+      if (this.tutorialService.getCachedTutorial() === "true") {
+        console.log("Tutorial già completato")
+        this.closeTutorialButton()
+      }
+      else {
+        console.log("Tutorial non ancora completato")
+        // this.isTutorialCompleted()
+        this.tutorialService.nextTutorial(this.indexCurrentTutorial)  //ÑON BLURRA GLI ALTRI COMPONENTI
+      }
+    }, 1);
   }
 
-  ngAfterViewInit(): void {
-    if (this.tutorialService.getCachedTutorial() === 'true') {
-      this.closeTutorialButton();
-    } else {
-      setTimeout(() => {
-        this.tutorialService.nextTutorial(-1);
-      }, 1);
+  public setIndex(indexCurrentTutorials: number) {
+    console.log("TutorialComponent:setIndex")
+    this.indexCurrentTutorial = indexCurrentTutorials
+  }
+
+  public nextTutorialButton() {
+    console.log("TutorialComponent:nextTutorialButton")
+    if (this.indexCurrentTutorial < this.tutorialService.getSizeTutorial() - 1) {
+      this.tutorialService.nextTutorial(this.indexCurrentTutorial)
+    }
+    else {
+      this.tutorialService.closeTutorial()
     }
   }
 
-  setIndex(index: number): void {
-    console.log('TutorialComponent:setIndex');
-    this.indexCurrentTutorial = index;
-  }
-
-  showTutorial(step: { componentName: string; text: string }): void {
-    console.log('TutorialComponent:showTutorial');
-    this.tutorialText = step.text;
-    this.isVisible = true;
-    this.testo = step.componentName === 'End' ? 'Fine' : 'Avanti';
-    this.backButtonDisabled = step.componentName === 'Begin';
-  }
-
-  closeTutorial(): void {
-    console.log('TutorialComponent:closeTutorial');
-    this.isVisible = false;
-  }
-
-  closeTutorialButton(): void {
-    console.log('TutorialComponent:closeTutorialButton');
-    this.tutorialService.closeTutorial();
-  }
-
-  nextTutorialButton(): void {
-    console.log('TutorialComponent:nextTutorialButton');
-    if (this.indexCurrentTutorial + 1 >= this.tutorialService.getSizeTutorial()) {
-      this.tutorialService.closeTutorial();
-    } else {
-      this.tutorialService.nextTutorial(this.indexCurrentTutorial);
+  public prevTutorialButton() {
+    console.log("TutorialComponent:previousTutorialButton")
+    this.tutorialService.previousTutorial(this.indexCurrentTutorial)
+    if (this.indexCurrentTutorial === 0) {
+      this.backButtonDisabled = true
     }
   }
 
-  prevTutorialButton(): void {
-    console.log('TutorialComponent:previousTutorialButton');
-    this.tutorialService.previousTutorial(this.indexCurrentTutorial);
-    this.backButtonDisabled = this.indexCurrentTutorial <= 0;
+  public closeTutorialButton() {
+    console.log("TutorialComponent:closeTutorialButton")
+    this.tutorialService.closeTutorial()
+  }
+
+  public showTutorial(tutorial: any) {
+    console.log("TutorialComponent:showTutorial")
+
+    if (tutorial.componentName === "Begin") {
+      this.testo = "Avanti"
+      this.backButtonDisabled = true
+    }
+    else if (tutorial.componentName === "End") {
+      this.testo = "Fine"
+    }
+    else {
+      this.testo = "Avanti"
+      this.backButtonDisabled = false;
+    }
+
+    this.tutorialText = tutorial.text
+    this.isVisible = true
+  }
+
+  public closeTutorial() {
+    console.log("TutorialComponent:closeTutorial")
+    this.isVisible = false
   }
 }

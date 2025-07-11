@@ -91,16 +91,18 @@ export class CompilerDriver implements ProjectDriver {
     let ready = msgRecived.args[0]
     resolvePromise(ready == 'true' ? true : false)
   }
-
-  private didReceiveInstallPackages(msgSent: CompilerMessage, msgRecived: CompilerMessage, resolvePromise: PromiseResolver<string>) {
-    console.log("compiler-serivce-driver:didReceiveInstallPackages: ")
-    if (msgSent.contents.length != 1) {
-      resolvePromise("");
-    }
-    console.log(msgRecived.contents)
-
-    resolvePromise(this.dataToString(msgRecived.contents[0]))
+private didReceiveInstallPackages(
+  msgSent: CompilerMessage,
+  msgRecived: CompilerMessage,
+  resolvePromise: PromiseResolver<string>
+) {
+  if (msgSent.contents.length != 1) {
+    resolvePromise("");
+    return;  // <-- aggiungi questo return per uscire subito
   }
+  resolvePromise(this.dataToString(msgRecived.contents[0]));
+}
+
 
   private didReceiveExecuteCode(msgSent: CompilerMessage, msgRecived: CompilerMessage, resolvePromise: PromiseResolver<string>) {
     console.log("compiler-serivce-driver:didReceiveExecuteCode: ")
@@ -122,81 +124,85 @@ export class CompilerDriver implements ProjectDriver {
     resolvePromise(this.dataToString(msgRecived.contents[0]))
   }
 
-  private didReceiveStopExecution(msgSent: CompilerMessage, msgRecived: CompilerMessage, resolvePromise: PromiseResolver<boolean>) {
-    console.log("compiler-serivce-driver:didReceiveStopExecution: ", msgRecived.args)
-    if (msgSent.args.length != 1) {
-      resolvePromise(false);
-    }
-
-    resolvePromise(true)
+  private didReceiveStopExecution(
+  msgSent: CompilerMessage,
+  msgRecived: CompilerMessage,
+  resolvePromise: PromiseResolver<boolean>
+): void {
+  if (msgSent.args.length !== 1) {
+    resolvePromise(false);
+    return;  // <-- Manca il return qui, senza quello continua e chiama resolvePromise(true)
   }
+  resolvePromise(true);
+}
 
-  private didReceiveSubscribeNotify(msgSent: CompilerMessage, msgRecived: CompilerMessage, resolvePromise: PromiseResolver<boolean>) {
-    console.log("compiler-serivce-driver:didReceiveSubscribeNotify: ")
-    if (msgRecived.args.length == 1) {
-      let result = msgRecived.args[0] == 'true'
-      resolvePromise(result);
-    }
-    if (this.onNotify && msgRecived.contents.length > 1) {
-      console.log(msgRecived.contents)
-      let [title, msg, kind] = msgRecived.contents
-      this.onNotify(this.dataToString(title), this.dataToString(msg), this.dataToString(kind))
-    }
+private didReceiveSubscribeNotify(
+  msgSent: CompilerMessage,
+  msgRecived: CompilerMessage,
+  resolvePromise: PromiseResolver<boolean>
+): void {
+  if (msgRecived.args.length === 1) {
+    let result = msgRecived.args[0] === 'true';
+    resolvePromise(result);
+    return;  // <-- Aggiunto return per non eseguire l'eventuale onNotify
   }
+  if (this.onNotify && msgRecived.contents.length > 1) {
+    let [title, msg, kind] = msgRecived.contents;
+    this.onNotify(this.dataToString(title), this.dataToString(msg), this.dataToString(kind));
+  }
+}
+
 
   private didReceiveSubscribeState(msgSent: CompilerMessage, msgRecived: CompilerMessage, resolvePromise: PromiseResolver<boolean>) {
-    console.log("compiler-serivce-driver:didReceiveSubscribeState: ")
-    if (msgRecived.args.length == 1) {
-      let result = msgRecived.args[0] == 'true'
-      resolvePromise(result);
-    }
-    console.log("compiler-serivce-driver:didReceiveSubscribeState: ", msgRecived.contents)
-    if (this.onState && msgRecived.contents.length > 0) {
-      console.log("compiler-serivce-driver:didReceiveSubscribeState: ", msgRecived.contents)
-      let state = msgRecived.contents[0] as CompilerState
-      let content;
-      if (msgRecived.contents.length > 1) {
-        content = this.dataToString(msgRecived.contents[1])
-      }
-      this.onState(state, content)
-    }
+  if (msgRecived.args.length == 1) {
+    let result = msgRecived.args[0] == 'true';
+    resolvePromise(result);
   }
-
-  private didReceiveSubscribeStdout(msgSent: CompilerMessage, msgRecived: CompilerMessage, resolvePromise: PromiseResolver<boolean>) {
-    console.log("compiler-serivce-driver:didReceiveSubscribeStdout: ")
-    if (msgRecived.args.length == 1) {
-      let result = msgRecived.args[0] == 'true'
-      resolvePromise(result);
+  if (this.onState && msgRecived.contents.length > 0) {
+    // Decodifica i contenuti se sono Uint8Array o ArrayBuffer
+    let state = msgRecived.contents[0] as CompilerState;
+    let content;
+    if (msgRecived.contents.length > 1) {
+      content = this.dataToString(msgRecived.contents[1]);
     }
-    if (this.onStdout && msgRecived.contents.length > 0) {
-      console.log(msgRecived.contents)
-      let content = msgRecived.contents[0]
-      this.onStdout(this.dataToString(content))
-    }
+    this.onState(state, content);
   }
+}
 
-  private didReceiveSubscribeStderr(msgSent: CompilerMessage, msgRecived: CompilerMessage, resolvePromise: PromiseResolver<boolean>) {
-    console.log("compiler-serivce-driver:didReceiveSubscribeStderr: ")
-    if (msgRecived.args.length == 1) {
-      let result = msgRecived.args[0] == 'true'
-      resolvePromise(result);
-    }
-    if (this.onStderr && msgRecived.contents.length > 0) {
-      console.log(msgRecived.contents)
-      let content = msgRecived.contents[0]
-      this.onStderr(this.dataToString(content))
-    }
+private didReceiveSubscribeStdout(msgSent: CompilerMessage, msgRecived: CompilerMessage, resolvePromise: PromiseResolver<boolean>) {
+  if (msgRecived.args.length == 1) {
+    let result = msgRecived.args[0] == 'true';
+    resolvePromise(result);
   }
-
-  private didReceiveSendStdin(msgSent: CompilerMessage, msgRecived: CompilerMessage, resolvePromise: PromiseResolver<boolean>) {
-    console.log("compiler-serivce-driver:didReceiveSendStdin: ")
-    if (msgRecived.args.length > 0) {
-      let result = msgRecived.args[0] == 'true'
-      resolvePromise(result);
-    }
-
-    resolvePromise(false)
+  if (this.onStdout && msgRecived.contents.length > 0) {
+    let content = msgRecived.contents[0];
+    this.onStdout(this.dataToString(content));
   }
+}
+
+private didReceiveSubscribeStderr(msgSent: CompilerMessage, msgRecived: CompilerMessage, resolvePromise: PromiseResolver<boolean>) {
+  if (msgRecived.args.length == 1) {
+    let result = msgRecived.args[0] == 'true';
+    resolvePromise(result);
+  }
+  if (this.onStderr && msgRecived.contents.length > 0) {
+    let content = msgRecived.contents[0];
+    this.onStderr(this.dataToString(content));
+  }
+}
+
+ private didReceiveSendStdin(
+  msgSent: CompilerMessage,
+  msgRecived: CompilerMessage,
+  resolvePromise: PromiseResolver<boolean>
+): void {
+  if (msgRecived.args.length > 0) {
+    let result = msgRecived.args[0] === 'true';
+    resolvePromise(result);
+    return;
+  }
+  resolvePromise(false);
+}
 
   private didReceiveMount(msgSent: CompilerMessage, msgRecived: CompilerMessage, resolvePromise: PromiseResolver<boolean>) {
     console.log("compiler-serivce-driver:didReceiveMount: ")
@@ -647,11 +653,15 @@ export class CompilerDriver implements ProjectDriver {
 
     return resultPromise;
   }
-
-  private dataToString(data: string | ArrayBuffer) {
-    if (data instanceof ArrayBuffer) { return this.binDecoder.decode(data) }
-    return data
+private dataToString(data: string | ArrayBuffer | Uint8Array) {
+  if (data instanceof ArrayBuffer) {
+    return this.binDecoder.decode(data);
   }
+  if (data instanceof Uint8Array) {
+    return this.binDecoder.decode(data);
+  }
+  return data;
+}
 
   private dataToArrayBuffer(data: string | ArrayBuffer) {
     if (data instanceof ArrayBuffer) { return data }

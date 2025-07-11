@@ -184,18 +184,18 @@ export class Tar{
       chunks.push(chunk)
     })
 
-    pack.on('end', ()=>{
-      // Create a new array with total length and merge all source arrays.
-      console.log(chunks)
-      let data = new Uint8Array(length);
-      let offset = 0;
-      chunks.forEach(item => {
-        data.set(item, offset);
-        offset += item.length;
-      });
-      console.log(data)
-      if(cb){cb(data)}
-    })
+   pack.on('end', () => {
+  let data = new Uint8Array(length);
+  let offset = 0;
+  chunks.forEach(item => {
+    data.set(item, offset);
+    offset += item.length;
+  });
+
+  if (cb) {
+    cb(data.buffer); // tani do të jetë gjithmonë ArrayBuffer
+  }
+});
 
     let processItems = function(items: Array<FsNodeFile|FsNodeFolder>){
       let item = items.shift()
@@ -232,12 +232,7 @@ export class Tar{
     processItems(items)
   }
 
-  
-  
-
 }
-
-
 
 export class xxhash{
   static sharedInstance:any;

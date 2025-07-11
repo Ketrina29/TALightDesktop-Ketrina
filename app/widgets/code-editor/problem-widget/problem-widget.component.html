@@ -34,7 +34,8 @@
     <p-dropdown #problemDropdown placeholder="Select a problem" class="tal-problem-widget-problem-selector"
       scrollHeight="50rem" [overlayOptions]="dropdownOptions"
       panelStyleClass="tal-problem-widget-problem-selector-panel" [options]="problemsMenu" [(ngModel)]="selectedProblem"
-      optionLabel="name" (onChange)="didSelectProblem()">
+      optionLabel="name" (onChange)="didSelectProblem($event)"
+>
 
       <ng-template let-option pTemplate="selectedItem">
         <div class="tal-problem-widget-problem-selected">{{cleanupName(option.name)}}</div>

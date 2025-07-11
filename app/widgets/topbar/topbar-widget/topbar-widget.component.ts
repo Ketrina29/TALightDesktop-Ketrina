@@ -1,20 +1,20 @@
-import { Component, ElementRef, NgZone, OnInit, ViewChild, HostListener } from '@angular/core';  
-import { NotificationManagerService, NotificationMessage, NotificationType } from 'src/app/services/notification-mananger-service/notification-manager.service';
-import { ProblemManagerService } from 'src/app/services/problem-manager-service/problem-manager.service';
-import { AppTheme, ThemeService } from 'src/app/services/theme-service/theme.service';
-import { ProjectConfig } from 'src/app/services/project-manager-service/project-manager.types';
-import { TutorialService } from 'src/app/services/tutorial-service/tutorial.service';
+import { Component, ElementRef, NgZone, OnInit, ViewChild, HostListener, AfterViewInit } from '@angular/core'; // Aggiungi AfterViewInit qui
+import { NotificationManagerService, NotificationMessage, NotificationType } from '../../../services/notification-mananger-service/notification-manager.service';
+import { ProblemManagerService } from '../../../services/problem-manager-service/problem-manager.service';
+import { AppTheme, ThemeService } from '../../../services/theme-service/theme.service';
+import { ProjectConfig } from '../../../services/project-manager-service/project-manager.types';
+import { TutorialService } from '../../../services/tutorial-service/tutorial.service';
 import { MenuItem } from 'primeng/api';
-import { FsService } from 'src/app/services/fs-service/fs.service';
-import { ConfigService } from 'src/app/services/config-service/config.service';
-import { ProjectManagerService } from 'src/app/services/project-manager-service/project-manager.service';
+import { FsService } from '../../../services/fs-service/fs.service';
+import { ConfigService } from '../../..//services/config-service/config.service';
+import { ProjectManagerService } from '../../..//services/project-manager-service/project-manager.service';
 
 @Component({
   selector: 'tal-topbar-widget',
   templateUrl: './topbar-widget.component.html',
   styleUrls: ['./topbar-widget.component.scss']
 })
-export class TopbarWidgetComponent implements OnInit {
+export class TopbarWidgetComponent implements OnInit, AfterViewInit { // Assicurati che il componente implementi AfterViewInit
   @ViewChild('statusDot') public statusDot?: ElementRef;
   @ViewChild('messageBox') public messageBox?: ElementRef;
 
@@ -50,19 +50,50 @@ export class TopbarWidgetComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadProjects();
+    console.log('Projects after load:', this.items.length);
+    this.showTutorial();
+
+   
+  // questa parte per non aprire subito il dialogvi 
+  // if (this.items.length === 0) {
+  //   this.openAddProjectDialog();
+  // }
+  }
+showTutorial() {
+  localStorage.setItem('tutorialCached', 'false');
+  this.tutorialService.nextTutorial(-1);
+}
+
+  ngAfterViewInit(): void {
+    if (this.statusDot) {
+      console.log('statusDot nativeElement:', this.statusDot.nativeElement);
+     
+      // Esempio: this.statusDot.nativeElement.style.color = 'green';
+    } else {
+      console.warn('statusDot is undefined in ngAfterViewInit');
+    }
+
+    if (this.messageBox) {
+      console.log('messageBox nativeElement:', this.messageBox.nativeElement);
+    
+      // Esempio: this.messageBox.nativeElement.style.backgroundColor = 'lightblue';
+    } else {
+      console.warn('messageBox is undefined in ngAfterViewInit');
+    }
   }
 
   openAddProjectDialog() {
     console.log('Apertura del dialogo');
+    console.trace('openAddProjectDialog was called!');
     this.newProjectName = '';
     this.selectedLanguage = '';
     this.addProjectDialogVisible = true;
   }
-  
+
   cancelAddProject() {
     this.addProjectDialogVisible = false;
   }
-  
+
   confirmAddProject() {
     if (!this.newProjectName || !this.selectedLanguage) {
       this.showNotification({
@@ -75,10 +106,10 @@ export class TopbarWidgetComponent implements OnInit {
     }
 
     if (this.items.length >= 10) {
-      this.showNotification({ 
-        type: NotificationType.Warning, 
-        title: 'Limite raggiunto', 
-        message: 'Non puoi aggiungere più di 10 progetti.', 
+      this.showNotification({
+        type: NotificationType.Warning,
+        title: 'Limite raggiunto',
+        message: 'Non puoi aggiungere più di 10 progetti.',
         timestamp: Date.now()
       });
       return;
@@ -103,16 +134,15 @@ export class TopbarWidgetComponent implements OnInit {
     this.activeItem = this.items.length > 0 ? this.items[0] : null;
     this.saveProjects();
   }
+
   confirmDeleteProject(projectId: string) {
     const confirmed = window.confirm('Sei sicuro di voler eliminare questo progetto?');
     if (confirmed) {
-      this.deleteProject(projectId);  // Chiamata alla funzione che elimina il progetto
+      this.deleteProject(projectId);
     }
   }
-  showTutorial() {
-    this.tutorialService.showTutorial();  // Chiamata al servizio che gestisce la logica del tutorial
-  }
-  
+
+ 
 
   setCurrentTab(item: any) {
     this.activeItem = item;
@@ -168,7 +198,6 @@ export class TopbarWidgetComponent implements OnInit {
 
   get changeThemIcon(): string {
     return this.themeService.currentTheme === AppTheme.dark ? 'pi-sun' : 'pi-moon';
-  
   }
 
   toggleTheme() {

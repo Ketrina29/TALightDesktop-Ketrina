@@ -1,6 +1,6 @@
 import { Component, NgZone, OnInit, QueryList, ViewChild, ViewChildren } from '@angular/core';
 import { Tooltip } from 'primeng/tooltip';
-import { TutorialService } from 'src/app/services/tutorial-service/tutorial.service';
+import { TutorialService } from '../../../services/tutorial-service/tutorial.service';
 
 @Component({
   selector: 'tal-log-api-widget',

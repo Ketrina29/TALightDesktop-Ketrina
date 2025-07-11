@@ -7,6 +7,9 @@ import { PyodideDriver } from '../python-compiler-service/python-compiler.driver
   providedIn: 'root'
 })
 export class CompilerService {
+  getDriver(arg0: string): any {
+    throw new Error('Method not implemented.');
+  }
   // Map of Language -> CompilerDriver
   private drivers = new Map<ProjectLanguage, ProjectDriver>();
 

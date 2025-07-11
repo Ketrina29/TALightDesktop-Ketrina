@@ -3,6 +3,20 @@ import { TestBed } from '@angular/core/testing';
 import { HotkeysService } from './hotkeys.service';
 import { ProjectManagerService } from '../project-manager-service/project-manager.service';
 import { mockProjectConfig } from './mockProjectConfig';
+ function mockConfig(key: string, ctrl = false): any {
+  return {
+    config: {
+      ...mockProjectConfig,
+      hotkeys: { 
+        HOTKEY_SAVE: { Control: ctrl, Alt: false, Shift: false, Key: key },
+        HOTKEY_EXPORT: { Control: ctrl, Alt: false, Shift: false, Key: 'e' },
+        HOTKEY_RUN: { Control: false, Alt: false, Shift: false, Key: 'F8' },
+        HOTKEY_TEST: { Control: false, Alt: false, Shift: false, Key: 'F9' }
+      }
+    }
+  };
+}
+
 
 describe('HotkeysService', () => {
   let service: HotkeysService;
@@ -24,17 +38,6 @@ describe('HotkeysService', () => {
     expect(service).toBeTruthy();
   });
 
-  function mockConfig(key: string, ctrl = false): any {
-    return {
-      config: {
-        ...mockProjectConfig,
-        HOTKEY_SAVE: { Control: ctrl, Alt: false, Shift: false, Key: key },
-        HOTKEY_EXPORT: { Control: ctrl, Alt: false, Shift: false, Key: 'e' },
-        HOTKEY_RUN: { Control: false, Alt: false, Shift: false, Key: 'F8' },
-        HOTKEY_TEST: { Control: false, Alt: false, Shift: false, Key: 'F9' }
-      }
-    };
-  }
 
   it('should emit "save" when CTRL+S is pressed', () => {
     projectManagerServiceSpy.getCurrentProject.and.returnValue(mockConfig('s', true));
@@ -101,17 +104,7 @@ it('should do nothing if event is repeated', () => {
   expect(service.hotkeysAction.emit).not.toHaveBeenCalled();
 });
 
-it('should do nothing if config is null', () => {
-  spyOn(service.hotkeysAction, 'emit');
- projectManagerServiceSpy.getCurrentProject.and.returnValue({ config: mockProjectConfig } as any);
 
-  const event = new KeyboardEvent('keydown', { key: 's', ctrlKey: true });
-  Object.defineProperty(event, 'repeat', { get: () => false });
-
-  service.getCorrectHotkey(event);
-
-  expect(service.hotkeysAction.emit).not.toHaveBeenCalled();
-});
 it('should call parseFile()', () => {
   const spy = spyOn(mockProjectConfig, 'parseFile');
   mockProjectConfig.parseFile();

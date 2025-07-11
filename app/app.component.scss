@@ -1,8 +1,10 @@
 @import "./widgets/code-editor/blur.scss";
-
 .blur {
-  @extend .blur;
-  z-index: 1;
+  filter: blur(4px);
+  pointer-events: auto;  
+  user-select: auto;     
+  z-index: 10;
+  position: relative;
 }
 
 div.tal-page-container {

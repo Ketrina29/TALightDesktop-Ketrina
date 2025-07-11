@@ -32,6 +32,9 @@ export class ProblemMenuEntry {
   styleUrls: ['./problem-widget.component.scss'],
 })
 export class ProblemWidgetComponent {
+  didSelect(dummyItem: { data: { name: string; }; }) {
+    throw new Error('Method not implemented.');
+  }
   @Output('onProblemChanged') public onProblemSelected = new EventEmitter<ProblemDescriptor>();
   @Output('onServiceChanged') public onServiceSelected = new EventEmitter<ServiceDescriptor>();
   @Output('onAttachments') public onAttachments = new EventEmitter<ArrayBuffer>();
@@ -150,13 +153,14 @@ private subscriptions: Subscription[] = []; // Add this property
     }
   }
 
-  private isTutorialShown(tutorial?: any) {
-    console.log("ProblemWidgetComponent:isTutorialShown")
-    if (typeof tutorial === 'undefined' || tutorial.componentName === this.constructor.name)
-      this.isBlurred = false
-    else
-      this.isBlurred = true
+private isTutorialShown(tutorial?: any) {
+  console.log("ProblemWidgetComponent:isTutorialShown");
+  if (!tutorial || tutorial.componentName === 'ProblemWidgetComponent') {
+    this.isBlurred = false;
+  } else {
+    this.isBlurred = true;
   }
+}
 
   ngOnDestroy() {
     this.problemSub?.unsubscribe()
@@ -320,22 +324,23 @@ public disconnect(): void {
     return name
   }
 
-  readableRegex(re: RegExp) {
-    let text = re + ""
-    text = text.replace(/\/(.*)\//, '$1')
-    text = text.replace(/\^(.*)\$/, '$1')
-    text = text.replace(/\[([^\]]*)\]/, (match: string, content: string) => {
-      if (content.startsWith('^')) {
-        return ' invalid(' + content.slice(1) + ') '
-      }
-      return ' valid(' + content.slice(1) + ') '
-    })
-    text = text.replace(/\(([^|]+|)*([^|]+)*\)/g, (match: string, options: string, last: string) => {
-      console.log('OROR:', match, options, last)
-      return text.replace(/\((.*)\)/, '$1').replace(/\|/g, ' OR ')
-    })
-    return text
-  }
+readableRegex(re: RegExp) {
+  let text = re.toString(); // "/[abc]/" → "[abc]"
+  text = text.replace(/^\/|\/$/g, ''); // remove slashes
+  text = text.replace(/^\^/, '').replace(/\$$/, ''); // remove anchors
+
+  // Match brackets: [abc] or [^abc]
+  text = text.replace(/\[([^\]]*)\]/g, (_, content) => {
+    if (content.startsWith('^')) {
+      return `invalid(${content.slice(1)})`;
+    }
+    return `valid(${content})`;
+  });
+
+  return text;
+}
+
+
 
   async argDidFocus(arg: ArgDescriptor, event: Event) {
     console.log('argDidFocus:', arg, event)

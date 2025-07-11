@@ -259,11 +259,6 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
     expect(onData).toHaveBeenCalledWith(mockMessageData);
     expect(onBinaryHeader).toHaveBeenCalledWith(mockHeader);
   });
-// --- This is what the 'mockCmd' part should look like in api.service.spec.ts ---
-
-// src/app/services/api-service/api.service.spec.ts
-
-// ... (keep all the code *before* this test, including the 'dovrebbe gestire correttamente Connect con successo' test) ...
 
   it('dovrebbe gestire correttamente Connect in caso di errore', () => {
     // Mock del comando Connect.

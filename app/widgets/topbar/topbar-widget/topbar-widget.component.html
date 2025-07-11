@@ -1,11 +1,11 @@
-<div class="tal-topbar" [class.blur]="isBlurred">
+<div class="tal-topbar" [class.blur]="isBlurred && !addProjectDialogVisible">
   <!-- Left Section: Brand and Add Tab Button -->
   <div class="topbar-left">
     <div class="tal-brand">
       <h1>Projects</h1>
     </div>
     <button
-      [disabled]="projects.length >= 10"
+      [disabled]="items.length >= 10"
       type="button"
       class="tal-square-button addTabButton"
       icon="pi pi-plus"

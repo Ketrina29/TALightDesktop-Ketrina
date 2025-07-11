@@ -15,6 +15,7 @@ export enum EditorType{
   Browser,
   Unknown,
   Default = Browser,
+  Binary,
 }
 
 export enum MatchMethod{

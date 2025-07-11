@@ -3,15 +3,15 @@ import { Component, ElementRef, EventEmitter, Input, NgZone, OnInit, Output, Que
 import { ConfirmationService } from 'primeng/api';
 import { OverlayPanel } from 'primeng/overlaypanel';
 import { MessageService } from 'primeng/api';
-import { FsService, Tar } from 'src/app/services/fs-service/fs.service';
-import { FsNodeFile, FsNodeFolder } from 'src/app/services/fs-service/fs.service.types';
+import { FsService, Tar } from '../../../services/fs-service/fs.service';
+import { FsNodeFile, FsNodeFolder } from '../../../services/fs-service/fs.service.types';
 import { GoogleLoginProvider, MicrosoftLoginProvider } from '@abacritt/angularx-social-login';
 import { SocialAuthService, SocialUser } from "@abacritt/angularx-social-login";
-import { GithubApiService } from 'src/app/services/github-api-service/github-api.service';
-import { TutorialService } from 'src/app/services/tutorial-service/tutorial.service';
-import { ProjectManagerService } from 'src/app/services/project-manager-service/project-manager.service';
-import { CompilerService } from 'src/app/services/compiler-service/compiler-service.service';
-import { ProjectDriver, ProjectLanguage } from 'src/app/services/project-manager-service/project-manager.types';
+import { GithubApiService } from '../../../services/github-api-service/github-api.service';
+import { TutorialService } from '../../../services/tutorial-service/tutorial.service';
+import { ProjectManagerService } from '../../..//services/project-manager-service/project-manager.service';
+import { CompilerService } from '../../../services/compiler-service/compiler-service.service';
+import { ProjectDriver, ProjectLanguage } from '../../../services/project-manager-service/project-manager.types';
 
 @Component({
   selector: 'tal-file-explorer-widget',
@@ -70,6 +70,7 @@ export class FileExplorerWidgetComponent implements OnInit {
   @Output("showHiddenChanged") public showHiddenChanged = new EventEmitter<boolean>();
   @Output('onFileDeleted') public onFileDeleted = new EventEmitter<string>();
   @Output('onItemRenamed') public onItemRenamed = new EventEmitter();
+
 
   constructor(
     private confirmationService: ConfirmationService,
@@ -676,58 +677,78 @@ export class FileExplorerWidgetComponent implements OnInit {
 
   }
 
-  public downloadGithub() {
+ public downloadGithub(): void {
+  const url = `https://github.com/login/oauth/authorize?...`;
+  const popupWindow = this.popupwindow(url, "GitHub Login", 400, 530);
 
-    console.log("GitHub");
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("username");
 
-    var url = `https://github.com/login/oauth/authorize?client_id=8fd3343f822c2429ad95&scope=user%20repo`;
-    var popupWindow = this.popupwindow(url, "GitHub Login", 400, 530);
+  this.checkGithubCallback(popupWindow, 'Github-import', undefined, undefined, undefined);
+}
+public checkGithubCallback(
+  popupWindow: any,
+  mode: 'Github-archive' | 'Github-import',
+  filename?: string,
+  content?: ArrayBuffer,
+  mime?: string
+): void {
+  let self = this;
+  let codeParam: string | null = null;
 
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("username");
+  const checkURLChange = setInterval(() => {
+    if (!popupWindow || popupWindow.closed) {
+      clearInterval(checkURLChange);
+    } else if (popupWindow.location.href.indexOf("github.com") === -1) {
+      const queryString = popupWindow.location.search;
+      const urlParams = new URLSearchParams(queryString);
+      codeParam = urlParams.get("code");
+      popupWindow.close();
 
-    var codeParam: string | null = "";
+      if (codeParam && !localStorage.getItem("accessToken")) {
+        if (mode === 'Github-archive') {
+          self.githubService.getAccessToken(codeParam)
+            .then(() => self.githubService.getUserData())
+            .then(() => self.githubService.getRepository('TALightProject-Archives'))
+           .then((data) => {
+  if (data.message === "Not Found") {
+    return self.githubService.createRepository('TALightProject-Archives')
+      .then(() => {
+        if (filename && content) {
+          return self.uploadFile('TALightProject-Archives', filename, content, mime ?? 'application/octet-stream');
+        }
+        return Promise.resolve(); // ✅ kthim eksplcit
+      });
+  } else {
+    if (filename && content) {
+      return self.uploadFile('TALightProject-Archives', filename, content, mime ?? 'application/octet-stream');
+    }
+    return Promise.resolve(); // ✅ kthim eksplcit
+  }
+});
 
-    var self = this;
-    const checkURLChange = setInterval(function () {
-      if (!popupWindow || popupWindow.closed) {
-        clearInterval(checkURLChange);
-        console.log('Popup window closed.');
-
-      } else if (popupWindow.location.href.indexOf("github.com") === -1) { //url does not contains "github.com"
-        console.log('URL in popup window changed:', popupWindow.location.href);
-
-        const queryString = popupWindow.location.search;
-        const urlParams = new URLSearchParams(queryString);
-        codeParam = urlParams.get("code");
-        console.log("CODE:", codeParam)
-
-        popupWindow.close();
-
-        if (codeParam && (localStorage.getItem("accessToken") === null)) {
-
+        } else {
           self.githubService.getAccessToken(codeParam)
             .then(() => self.githubService.getUserData())
             .then(() => self.githubService.getRepoList())
             .then((data) => {
-
-              let condition = (repo: { name: string; }) => repo.name == 'TALightProject-Archives';
-              let isPresentRepo = data.findIndex(condition)
-
-              if (isPresentRepo !== -1) { data.splice(isPresentRepo, 1); }
-
-              self.reposList = data
+              const condition = (repo: { name: string }) => repo.name === 'TALightProject-Archives';
+              const index = data.findIndex(condition);
+              if (index !== -1) data.splice(index, 1);
+              self.reposList = data;
             })
             .then(() => {
-              self.selectedRepo = '';
-              self.importButtonRepoDisabled = true;
-              self.importVisible = true
-            })
+              self.newRepoOwner = localStorage.getItem("username");
+              self.newRepoName = '';
+              self.selectedRepo = undefined;
+              self.exportVisible = true;
+              self.detectInput();
+            });
         }
       }
-    }, 1000); // Check every second until condition on the url is satisfied
-
-  }
+    }
+  }, 1000);
+}
 
 
   public uploadFiles() {
@@ -834,7 +855,8 @@ export class FileExplorerWidgetComponent implements OnInit {
   }
 
 
-  private async uploadFile(repository: string, filename: string, content: ArrayBuffer, mime: string) {
+  private async uploadFile(repository: string, filename: string, content: ArrayBuffer, mime: string = "application/octet-stream")
+ {
     console.log("UPLOAD FILE")
 
     // Prepare data to upload on GitHub

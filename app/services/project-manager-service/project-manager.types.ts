@@ -52,7 +52,7 @@ export abstract class ProjectEnvironment {
       this.config.CREATE_EXAMPLES = true
     }
 
-    await console.log("ProjectEnvironment:load:config:done:", this.config)
+    console.log("ProjectEnvironment:load:config:done:", this.config)
 
     let res = true;
     if (this.config.CREATE_EXAMPLES) {
@@ -100,7 +100,8 @@ export abstract class ProjectEnvironment {
     let configContent = await driver.readFile(path, false) as string;
     console.log("ProjectConfig:load:found.", configContent)
 
-    let config = null
+    let config: ProjectConfig | null = null;
+
     try {
       config = JSON.parse(configContent) as ProjectConfig
       Object.setPrototypeOf(config, ProjectConfig.prototype)

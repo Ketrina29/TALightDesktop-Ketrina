@@ -3,14 +3,13 @@ import { FormsModule } from '@angular/forms';
 import { BrowserModule } from '@angular/platform-browser';
 import { RouterModule } from '@angular/router';
 import { HttpClientModule } from '@angular/common/http'; // Importa HttpClientModule
-
 // Componenti
 import { AppComponent } from './app.component';
 import { HomeViewComponent } from './views/home-view/home-view.component';
 import { ConnectViewComponent } from './views/connect-view/connect-view.component';
 import { SelectProblemViewComponent } from './views/select-problem-view/select-problem-view.component';
 import { TutorialComponent } from './widgets/tutorial/tutorial.component';
-import { TopbarWidgetComponent } from './widgets/topbar/topbar-widget/topbar-widget.component';
+
 
 // Moduli PrimeNG
 import { InputTextModule } from 'primeng/inputtext';
@@ -47,7 +46,8 @@ import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
     HomeViewComponent,
     ConnectViewComponent,
     SelectProblemViewComponent,
-    TutorialComponent
+    TutorialComponent,
+    
   ],
   imports: [
     BrowserModule,
@@ -74,6 +74,7 @@ import { CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
   ],
   providers: [],
 
-  bootstrap: [AppComponent]
+  bootstrap: [AppComponent], 
+  schemas: [CUSTOM_ELEMENTS_SCHEMA] 
 })
 export class AppModule { }

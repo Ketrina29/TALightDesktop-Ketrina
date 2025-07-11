@@ -13,85 +13,54 @@ describe('TutorialComponent', () => {
   let service: jasmine.SpyObj<TutorialService>;
 
   beforeEach(fakeAsync(async () => {
-    const tutorialServiceSpy = jasmine.createSpyObj<TutorialService>(
-      'TutorialService',
-      ['closeTutorial', 'nextTutorial', 'previousTutorial', 'getCachedTutorial', 'getSizeTutorial']
-    );
+  const tutorialServiceSpy = jasmine.createSpyObj<TutorialService>(
+    'TutorialService',
+    ['closeTutorial', 'nextTutorial', 'previousTutorial', 'getCachedTutorial', 'getSizeTutorial']
+  );
 
-    Object.defineProperty(tutorialServiceSpy, 'onIndexTutorialChange', {
-      value: new EventEmitter<number>(),
-      writable: true,
-    });
-    Object.defineProperty(tutorialServiceSpy, 'onTutorialChange', {
-      value: new EventEmitter<any>(),
-      writable: true,
-    });
-    Object.defineProperty(tutorialServiceSpy, 'onTutorialClose', {
-      value: new EventEmitter<void>(),
-      writable: true,
-    });
+  Object.defineProperty(tutorialServiceSpy, 'onIndexTutorialChange', {
+    value: new EventEmitter<number>(),
+    writable: true,
+  });
+  Object.defineProperty(tutorialServiceSpy, 'onTutorialChange', {
+    value: new EventEmitter<any>(),
+    writable: true,
+  });
+  Object.defineProperty(tutorialServiceSpy, 'onTutorialClose', {
+    value: new EventEmitter<void>(),
+    writable: true,
+  });
 
-    tutorialServiceSpy.getCachedTutorial.and.returnValue('false');
-    tutorialServiceSpy.getSizeTutorial.and.returnValue(10);
-    tutorialServiceSpy.nextTutorial.and.callFake((index) => {
-      tutorialServiceSpy.onIndexTutorialChange.emit(index + 1);
-      tutorialServiceSpy.onTutorialChange.emit({ componentName: 'Begin', text: 'Initial tutorial text' });
-    });
+  // Default returns
+  tutorialServiceSpy.getCachedTutorial.and.returnValue('false');
+  tutorialServiceSpy.getSizeTutorial.and.returnValue(10);
+  tutorialServiceSpy.nextTutorial.and.stub(); // Nuk bën asgjë, thjesht regjistron thirrjen
+  tutorialServiceSpy.previousTutorial.and.stub();
+  tutorialServiceSpy.closeTutorial.and.stub();
 
-    await TestBed.configureTestingModule({
-      declarations: [TutorialComponent],
-      schemas: [NO_ERRORS_SCHEMA],
-      imports: [
-        DropdownModule,
-        HttpClientTestingModule,
-        FormsModule,
-      ],
-      providers: [{ provide: TutorialService, useValue: tutorialServiceSpy }],
-    }).compileComponents();
+  await TestBed.configureTestingModule({
+    declarations: [TutorialComponent],
+    schemas: [NO_ERRORS_SCHEMA],
+    imports: [
+      DropdownModule,
+      HttpClientTestingModule,
+      FormsModule,
+    ],
+    providers: [{ provide: TutorialService, useValue: tutorialServiceSpy }],
+  }).compileComponents();
 
-    fixture = TestBed.createComponent(TutorialComponent);
-    component = fixture.componentInstance;
-    service = TestBed.inject(TutorialService) as jasmine.SpyObj<TutorialService>;
-    component['tutorialService'] = service; 
+  fixture = TestBed.createComponent(TutorialComponent);
+  component = fixture.componentInstance;
+  service = TestBed.inject(TutorialService) as jasmine.SpyObj<TutorialService>;
 
-    fixture.detectChanges();
-    tick(1);
-  }));
+  fixture.detectChanges();
+  tick(1);
+}));
 
   it('should create', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should set the current tutorial index when setIndex is called', fakeAsync(() => {
-    // The component's index should already be initialized from beforeEach due to nextTutorial(-1)
-    // If nextTutorial(-1) resulted in index 0, then we can verify that first.
-    // If the mock nextTutorial.and.callFake above emits index+1, then it would be 0.
-    expect(component.indexCurrentTutorial).toBe(0); // Assuming nextTutorial(-1) leads to index 0
-
-    component.setIndex(2); // Now test setting it to a new value
-    fixture.detectChanges();
-    tick();
-
-    expect(component.indexCurrentTutorial).toBe(2);
-  }));
-
-  it('should show tutorial with correct values', fakeAsync(() => {
-    // Initial state from beforeEach/nextTutorial(-1) should be "Begin"
-    expect(component.tutorialText).toBe('Initial tutorial text');
-    expect(component.isVisible).toBeTrue();
-    expect(component.testo).toBe('Avanti');
-    expect(component.backButtonDisabled).toBeTrue(); // 'Begin' means back button disabled
-
-    const step = { componentName: 'SomeStep', text: 'Some custom tutorial text' };
-    component.showTutorial(step);
-    fixture.detectChanges();
-    tick();
-
-    expect(component.tutorialText).toBe('Some custom tutorial text');
-    expect(component.isVisible).toBeTrue();
-    expect(component.testo).toBe('Avanti');
-    expect(component.backButtonDisabled).toBeFalse(); // Not 'Begin'
-  }));
 
   it('should show Fine when step is End', fakeAsync(() => {
     const step = { componentName: 'End', text: 'End of tutorial' };
@@ -121,25 +90,6 @@ it('should subscribe to onTutorialClose and call closeTutorial()', () => {
 });
 
 
-it('should call closeTutorialButton if getCachedTutorial returns "true"', fakeAsync(() => {
-  spyOn(service, 'getCachedTutorial').and.returnValue('true');
-  const spy = spyOn(component, 'closeTutorialButton');
-
-  component.ngAfterViewInit();
-  tick(); // simulo timeout
-
-  expect(spy).toHaveBeenCalled();
-}));
-
-it('should call nextTutorial(-1) if getCachedTutorial is not "true"', fakeAsync(() => {
-  spyOn(service, 'getCachedTutorial').and.returnValue(null);
-  const spy = spyOn(service, 'nextTutorial');
-
-  component.ngAfterViewInit();
-  tick(); // simulo timeout
-
-  expect(spy).toHaveBeenCalledWith(-1);
-}));
 it('should update indexCurrentTutorial on setIndex()', () => {
   component.setIndex(7);
   expect(component.indexCurrentTutorial).toBe(7);
@@ -175,30 +125,74 @@ it('should disable backButton when componentName is "Begin"', () => {
   component.showTutorial({ componentName: 'Begin', text: 'Start' });
   expect(component.backButtonDisabled).toBeTrue();
 });
-it('should call closeTutorialButton when cached tutorial is true', fakeAsync(() => {
-  spyOn(service, 'getCachedTutorial').and.returnValue('true');
-  const closeSpy = spyOn(component, 'closeTutorialButton');
+
+it('should call closeTutorialButton if getCachedTutorial returns "true"', fakeAsync(() => {
+  service.getCachedTutorial.and.returnValue('true');
+  const closeSpy = spyOn(component, 'closeTutorialButton').and.callThrough();
+
   component.ngAfterViewInit();
-  tick(2); // prite 1ms timeout
+  tick(2);
+
   expect(closeSpy).toHaveBeenCalled();
 }));
 
+it('should call nextTutorial(-1) if getCachedTutorial is not "true"', fakeAsync(() => {
+  service.getCachedTutorial.and.returnValue('false');
+  component.indexCurrentTutorial = -1;
 
-it('should call nextTutorial(-1) when no cached tutorial', fakeAsync(() => {
-  spyOn(service, 'getCachedTutorial').and.returnValue(null); // ose 'false'
-  const nextSpy = spyOn(service, 'nextTutorial');
   component.ngAfterViewInit();
-  tick(2); // simulo setTimeout
-  expect(nextSpy).toHaveBeenCalledWith(-1);
-}));
+  tick(2);
 
-it('should set backButtonDisabled to true when index is 0', () => {
-  component.indexCurrentTutorial = 0;
-  spyOn(service, 'previousTutorial');
+  expect(service.nextTutorial).toHaveBeenCalledWith(-1);
+}));
+it('should call nextTutorial(-1) when no cached tutorial', fakeAsync(() => {
+  service.getCachedTutorial.and.returnValue(null);
+  component.indexCurrentTutorial = -1;
+
+  component.ngAfterViewInit();
+  tick(2);
+
+  expect(service.nextTutorial).toHaveBeenCalledWith(-1);
+}));
+it('should set the current tutorial index when setIndex is called', () => {
+  expect(component.indexCurrentTutorial).toBe(-1); // fillimisht
+  component.setIndex(3);
+  expect(component.indexCurrentTutorial).toBe(3);
+});
+it('should show tutorial with correct values', () => {
+  const step = { componentName: 'Mid', text: 'Hello Tutorial' };
+  component.showTutorial(step);
+
+  expect(component.tutorialText).toBe('Hello Tutorial');
+  expect(component.isVisible).toBeTrue();
+  expect(component.testo).toBe('Avanti');
+  expect(component.backButtonDisabled).toBeFalse();
+});
+it('should call nextTutorial if indexCurrentTutorial is less than last index', () => {
+  component.indexCurrentTutorial = 3; // < 9 (getSizeTutorial = 10)
+  component.nextTutorialButton();
+  expect(service.nextTutorial).toHaveBeenCalledWith(3);
+});
+it('should call closeTutorial if indexCurrentTutorial is last index', () => {
+  component.indexCurrentTutorial = 9; // getSizeTutorial = 10
+  component.nextTutorialButton();
+  expect(service.closeTutorial).toHaveBeenCalled();
+});
+it('should call previousTutorial and not disable back button if index > 0', () => {
+  component.indexCurrentTutorial = 2;
+  component.backButtonDisabled = true; // fillimisht true për të vërtetuar që ndryshon
+
   component.prevTutorialButton();
-  expect(service.previousTutorial).toHaveBeenCalledWith(0);
-  expect(component.backButtonDisabled).toBeTrue(); // kjo është degë më vete
+
+  expect(service.previousTutorial).toHaveBeenCalledWith(2);
+  expect(component.backButtonDisabled).toBeFalse(); // kjo do të dështojë nëse nuk ndryshohet manualisht
 });
 
+it('should disable back button when index is 0', () => {
+  component.indexCurrentTutorial = 0;
+  component.prevTutorialButton();
+  expect(service.previousTutorial).toHaveBeenCalledWith(0);
+  expect(component.backButtonDisabled).toBeTrue();
+});
 
 });

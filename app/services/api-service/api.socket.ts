@@ -1,6 +1,6 @@
 import { WebSocketSubject } from 'rxjs/webSocket';
 import { Packets } from './api.packets';
-
+import { WebSocketFactory } from './web-socket-factory';
 
 export class TALightSocket{
   public url = 'ws://localhost:8008';
@@ -20,7 +20,7 @@ export class TALightSocket{
     this.url = url;
 
     if (!this.ws || this.ws.closed ){
-      this.ws = new WebSocketSubject({
+      this.ws = WebSocketFactory.createWebSocket({
         url: this.url,
         binaryType: "arraybuffer",
         deserializer: msg => msg,
@@ -76,30 +76,28 @@ export class TALightSocket{
     return true;
   }
   
-  public didRecieve(payload:MessageEvent){ // Called whenever there is a message from the server.
-    let data = payload.data;
-    console.log("TALightSocket:didRecieve:type: "+payload.constructor.name+"<"+payload.data.constructor.name+">" )
-
-    if(typeof data === "object" && data instanceof ArrayBuffer) {
-      if(this.decode) {
-        if (data.byteLength == 0) {return}
-        data = this.binDecoder.decode(data);
-        console.log("TALightSocket:didRecieve:binary:\n"+data)
-        if(this.onReciveBinary){ this.onReciveBinary( data );}
-      } 
-      else {
-        if(this.onReciveUndecodedBinary){ this.onReciveUndecodedBinary( data );}
-      }
-    } else{
-      let packetsPayload = new Packets.PacketsPayload(data)
-      console.log("TALightSocket:didRecieve:packets: "+packetsPayload.packetTypes)
-      if(this.onRecive){ this.onRecive( packetsPayload ); }
-      
+  public didRecieve(payload: MessageEvent) {
+  let data = payload.data;
+  if (typeof data === "object" && data instanceof ArrayBuffer) {
+    if (this.decode) {
+      if (data.byteLength == 0) return;
+      data = this.binDecoder.decode(data);
+      if (this.onReciveBinary) this.onReciveBinary(data);
+    } else {
+      if (this.onReciveUndecodedBinary) this.onReciveUndecodedBinary(data);
+    }
+  } else {
+    try {
+      let packetsPayload = new Packets.PacketsPayload(data);
+      if (this.onRecive) this.onRecive(packetsPayload);
+    } catch (e) {
+      this.didError?.(`TALightSocket: Invalid JSON - ${e}`);
     }
   }
+}
+
 
   public didError(error:any) { 
-    //let errorMsg = JSON.stringify(err);
     if (this.onError) { this.onError(error );}
   }
 
@@ -108,7 +106,3 @@ export class TALightSocket{
     if (this.onClose) { this.onClose();}
   }
 }
-
-
-
-

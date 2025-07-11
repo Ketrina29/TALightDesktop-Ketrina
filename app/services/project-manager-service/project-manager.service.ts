@@ -129,22 +129,23 @@ export class ProjectManagerService {
     this.getCurrentDriver().stopExecution()
   }
 
-  public addProject() {
-    console.log("ProjectManagerService:addProject")
+public addProject(): number {
+  console.log("ProjectManagerService:addProject");
 
-    let id = 0
-    let ids = this.getProjectsId()
-    console.log("ProjectManagerService:addProject:ids", ids)
-    if(ids.length > 0)
-      id = Math.max(...ids) + 1
+  let id = 0;
+  let ids = this.getProjectsId();
+  console.log("ProjectManagerService:addProject:ids", ids);
+  if (ids.length > 0) id = Math.max(...ids) + 1;
 
-    console.log("ProjectManagerService:addProject:id: ", id)
-    this.projectsEnvironment.set(id, this.createProject(ProjectLanguage.PY));
-    this.setCurrent(id);
+  console.log("ProjectManagerService:addProject:id: ", id);
+  this.projectsEnvironment.set(id, this.createProject(ProjectLanguage.PY));
+  this.setCurrent(id);
 
-    this.projectManagerServiceListChanged.emit();
-    this.store();
-  }
+  this.projectManagerServiceListChanged.emit();
+  this.store();
+
+  return id; 
+}
 
   private async load() {
     // Read from cache, to replace with the previous comment

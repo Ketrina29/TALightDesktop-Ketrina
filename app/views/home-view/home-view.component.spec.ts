@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { HomeViewComponent } from './home-view.component';
-import { fakeAsync, tick } from '@angular/core/testing';
+
 
 describe('HomeViewComponent', () => {
   let component: HomeViewComponent;

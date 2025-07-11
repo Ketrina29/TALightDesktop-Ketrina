@@ -17,6 +17,91 @@ import { TutorialService } from '../../../services/tutorial-service/tutorial.ser
   styleUrls: ['./terminal-widget.component.scss']
 })
 export class TerminalWidgetComponent implements OnInit {
+  sendCommand(arg0: string) {
+    throw new Error('Method not implemented.');
+  }
+  handleCommand(command: string) {
+  command = command.trim();
+  this.commandSplit = command.split(' ');
+  console.log("CommandSplit: ", this.commandSplit);
+
+  if (this.commandConnectState) {
+    if (!this.cmdConnect) return;
+    this.cmdConnect.sendBinary(command + "\n");
+    this.response = '';
+  } else {
+    this.terminalHistory.push(command);
+    this.terminalHistoryIndex = this.terminalHistory.length;
+
+    if (this.commandSplit[0] === 'rtal') {
+      if (this.commandSplit.length === 1) {
+        this.response = this.HelpMessage();
+        this.onResponseComplete.emit();
+      } else {
+        switch (this.commandSplit[1]) {
+          case 'help':
+          case '--help':
+          case '-h':
+            this.response = this.HelpMessage();
+            this.onResponseComplete.emit();
+            break;
+          case '-s':
+          case '--server-url':
+            if (this.commandSplit.length == 2) {
+              this.response = this.ErrorMessage02();
+              this.onResponseComplete.emit();
+            } else {
+              this.url = this.commandSplit[2];
+              if (this.commandSplit.length == 3) {
+                this.response = this.HelpMessage();
+                this.onResponseComplete.emit();
+              } else {
+                if (this.commandSplit[3] == 'get') {
+                  if (this.commandSplit.length === 5) {
+                    this.problemSearch = this.commandSplit[4];
+                    this.onGetCommand();
+                  } else {
+                    this.response = this.ErrorMessage07(this.commandSplit[5] || '');
+                    this.onResponseComplete.emit();
+                  }
+                } else if (this.commandSplit[3] == 'list') {
+                  this.command = 'list';
+                  this.getListProblems(this.url);
+                } else if (this.commandSplit[3] == 'connect') {
+                  this.onConnectCommand();
+                } else {
+                  this.response = this.ErrorMessage03(this.commandSplit[3]);
+                  this.onResponseComplete.emit();
+                }
+              }
+            }
+            break;
+          case '-V':
+          case '--version':
+            this.response = "rtal 0.2.5";
+            this.onResponseComplete.emit();
+            break;
+          default:
+            this.response = this.ErrorMessage01(this.commandSplit[1]);
+            this.onResponseComplete.emit();
+        }
+      }
+    } else if (this.commandSplit[0] === 'clear' && this.commandSplit.length === 1) {
+      let terminalContent = document.getElementsByClassName('p-terminal-content')[0] as HTMLElement;
+      setTimeout(() => {
+        while (terminalContent.firstChild) {
+          terminalContent.removeChild(terminalContent.firstChild);
+        }
+      }, 0);
+      this.response = '';
+      this.onResponseComplete.emit();
+    } else {
+      this.response = "Unknown command: '" + command + "'";
+      this.onResponseComplete.emit();
+    }
+  }
+}
+
   @Output('onAttachments') public onAttachments = new EventEmitter<ArrayBuffer>();
   @Output('onProblemChanged') public onProblemSelected = new EventEmitter<ProblemDescriptor>();
 
@@ -58,7 +143,8 @@ export class TerminalWidgetComponent implements OnInit {
   private problemSearch!: string;
   private command!: string;
   private url!: string;
-  private commandSplit!: string[];
+  public commandSplit: string[] = [];
+
   private connectParams = {};
   isBlurred: boolean = false;
   commandHandlerSubject: any;
@@ -77,102 +163,17 @@ export class TerminalWidgetComponent implements OnInit {
     this.tutorialService.onTutorialClose.subscribe(() => { this.isTutorialShown() })
   }
 
-  ngOnInit() {
-    // Subscribe to onResponseComplete ONCE in ngOnInit
-    // This ensures that when onResponseComplete emits, terminalService.sendResponse is called once.
-    this.onResponseComplete.subscribe({
-      next: (payload: any) => { this.terminalService.sendResponse(this.response) }
-    });
+ngOnInit() {
+  this.onResponseComplete.subscribe({
+    next: (_payload: any) => {
+      this.terminalService.sendResponse(this.response);
+    }
+  });
 
-    this.terminalService.commandHandler.subscribe(command => {
-      // Prepare command string to analysis
-      command = command.trim();
-      this.commandSplit = command.split(' ');
-      console.log("CommandSplit: ", this.commandSplit);
-
-      // When 'rtal connect' is running
-      if (this.commandConnectState) {
-        if (!this.cmdConnect) { return; }
-        this.cmdConnect.sendBinary(command + "\n");
-        this.response = ''; // Clear response here if it's sent via sendBinary
-      }
-      else {
-        // save command in terminal history/cache
-        this.terminalHistory.push(command)
-        this.terminalHistoryIndex = this.terminalHistory.length;
-
-        if (this.commandSplit[0] === 'rtal') {
-          if (this.commandSplit.length == 1) {
-            this.response = this.HelpMessage();
-            this.onResponseComplete.emit();
-          } else {
-            switch (this.commandSplit[1]) {
-              case 'help':
-              case '--help':
-              case '-h':
-                this.response = this.HelpMessage();
-                this.onResponseComplete.emit();
-                break;
-              case '-s':
-              case '--server-url':
-                if (this.commandSplit.length == 2) {
-                  this.response = this.ErrorMessage02();
-                  this.onResponseComplete.emit();
-                } else {
-                  this.url = this.commandSplit[2];
-                  if (this.commandSplit.length == 3) {
-                    this.response = this.HelpMessage();
-                    this.onResponseComplete.emit();
-                  } else {
-                    if (this.commandSplit[3] == 'get') {
-                      if (this.commandSplit.length === 5) {
-                        this.problemSearch = this.commandSplit[4]
-                        this.onGetCommand(); // onGetCommand also emits onResponseComplete
-                      } else {
-                        this.response = this.ErrorMessage07(this.commandSplit[5]);
-                        this.onResponseComplete.emit();
-                      }
-                    } else if (this.commandSplit[3] == 'list') {
-                      this.command = 'list';
-                      this.getListProblems(this.url); // getListProblems also emits onResponseComplete
-                    }
-                    else if (this.commandSplit[3] == "connect") {
-                      this.onConnectCommand(); // onConnectCommand also emits onResponseComplete
-                    } else {
-                      this.response = this.ErrorMessage03(this.commandSplit[3]);
-                      this.onResponseComplete.emit();
-                    }
-                  }
-                }
-                break;
-              case '-V':
-              case '--version':
-                this.response = "rtal 0.2.5";
-                this.onResponseComplete.emit();
-                break;
-              default:
-                this.response = this.ErrorMessage01(this.commandSplit[1]);
-                this.onResponseComplete.emit();
-            }
-          }
-        } else if (this.commandSplit[0] === 'clear' && this.commandSplit.length === 1) {
-          let terminalContent: HTMLElement = document.getElementsByClassName('p-terminal-content')[0] as HTMLElement;
-          let children = terminalContent.children;
-
-          setTimeout(() => {
-            let length = children.length;
-            for (let index = 0; index < length; index++) { terminalContent.removeChild(children[0]) }
-          }, 0);
-          this.response = ''; // Clear response after handling 'clear' command
-          this.onResponseComplete.emit(); // Emit to ensure `sendResponse` is called, potentially with an empty string
-        }
-        else {
-          this.response = "Unknown command: '" + command + "'";
-          this.onResponseComplete.emit();
-        }
-      }
-    });
-  }
+  this.terminalService.commandHandler.subscribe(command => {
+    this.handleCommand(command);
+  });
+}
 
   private isTutorialShown(tutorial?: any) {
     console.log("TerminalWidgetComponent:isTutorialShown")
@@ -549,12 +550,19 @@ export class TerminalWidgetComponent implements OnInit {
       my_obj.dispatchEvent(event);
     }
   }
+public async runConnectAPI() {
+  this.apiRun = true;
 
-  public async runConnectAPI() {
-    this.apiRun = true
-    await this.apiConnect()
-    this.apiRun = false
+  try {
+    await this.apiConnect();
+  } catch (error) {
+    this.response = 'ERROR: ' + error;
+    this.onResponseComplete.emit();
+  } finally {
+    this.apiRun = false;
   }
+}
+
 
   async apiConnectReset() {
     this.current_output_file = undefined;
@@ -608,14 +616,21 @@ export class TerminalWidgetComponent implements OnInit {
     return true
   }
 
-  async didError(msg: string) {
-    this.cmdConnect = undefined
-    this.pms.getCurrentDriver().stopExecution()
-    this.prompt = "TALight> ";
-    this.commandConnectState = false;
-    this.response = "ERROR: " + msg;
-    this.onResponseComplete.emit();
+ async didError(msg: string) {
+  this.cmdConnect = undefined;
+
+  // ✅ Parandalon errorin kur pms është undefined
+  if (this.pms?.getCurrentDriver) {
+    const driver = this.pms.getCurrentDriver();
+    driver?.stopExecution?.();
   }
+
+  this.prompt = "TALight> ";
+  this.commandConnectState = false;
+  this.response = "ERROR: " + msg;
+  this.onResponseComplete.emit();
+}
+
 
   async didConnectStart() {
     console.log("apiConnect:didConnectStart")
@@ -641,9 +656,10 @@ export class TerminalWidgetComponent implements OnInit {
   async didConnectData(data: string) {
     console.log("apiConnect:didConnectData:", data)
     if (this.output_files && this.current_output_file) {
-      if (this.current_output_file) {
-        this.pms.getCurrentDriver().writeFile("/" + this.current_output_file, data)
-      };
+     if (this.current_output_file && this.output_files.includes(this.current_output_file)) {
+  this.pms.getCurrentDriver().writeFile("/" + this.current_output_file, data);
+}
+
       if (this.current_output_file === this.output_files[this.output_files.length - 1]) {
         this.apiConnectReset();
       }

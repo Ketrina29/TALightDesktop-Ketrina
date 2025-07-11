@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Output, ViewChild, NgZone, ElementRef } from '@angular/core';
-import { CompilerState } from 'src/app/services/compiler-service/compiler-service.types';
-import { TutorialService } from 'src/app/services/tutorial-service/tutorial.service';
+import { CompilerState } from '../../../services/compiler-service/compiler-service.types';
+import { TutorialService } from '../../../services/tutorial-service/tutorial.service';
 
 
 export class OutputMessage {
@@ -28,6 +28,16 @@ type TimeoutID = number;
   styleUrls: ['./output-widget.component.scss'],
 })
 export class OutputWidgetComponent {
+  
+  updateIconForOutputType(type: OutputType) {
+    throw new Error('Method not implemented.');
+  }
+  icon(icon: any) {
+    throw new Error('Method not implemented.');
+  }
+  getIcon(type: OutputType) {
+    throw new Error('Method not implemented.');
+  }
   @Output('onInput') public onInput = new EventEmitter<InputEvent>();
   @Output('onStdin') public onStdin = new EventEmitter<string>();
 

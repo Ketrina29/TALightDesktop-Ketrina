@@ -1,17 +1,17 @@
 
 export namespace Packets{
 
-    export class PacketsPayload{
-      public data;
-      public packets:any;
-      public packetTypes:string[] = []
+  export class PacketsPayload {
+  public data: string;
+  public packets: any;
+  public packetTypes: string[] = [];
 
-      constructor(data:string){
-        this.data = data;
-        this.packets = JSON.parse(this.data);
-        for (var pkttype in this.packets) {
-          this.packetTypes.push(pkttype)
-        }
+  constructor(data: string) {
+    this.data = data;
+    this.packets = JSON.parse(this.data);
+    for (var pkttype in this.packets) {
+      this.packetTypes.push(pkttype);
+    }
 
         /*
         if(this.packetTypes.length === 3 &&
@@ -256,16 +256,26 @@ export namespace Packets{
 
 
 
-    export class Result {
-      Ok: string[]|null = null
-      Err: string = ""
-      constructor(data:any){
-        if("Ok" in data){this.Err = data["Ok"]}
-        if("Err" in data){this.Err = data["Err"]}
-      }
 
-      success(){ return this.Err == "" }
+  export class Result {
+  Ok: string[] | null = null;
+  Err: string | null = null;
+
+  constructor(data: any) {
+    if ("Ok" in data) {
+      this.Ok = data["Ok"];
+      this.Err = null;
+    } else if ("Err" in data) {
+      this.Err = data["Err"];
+      this.Ok = null;
     }
+  }
+
+  success(): boolean {
+    return this.Err === null || this.Err === "";
+  }
+}
+
     /*
     Attachment { status: Result<(), String> },
     ConnectBegin { status: Result<Vec<String>, String> },
@@ -275,6 +285,7 @@ export namespace Packets{
 
 
   }
-}
+
+}  
 
 

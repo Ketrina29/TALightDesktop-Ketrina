@@ -21,19 +21,33 @@ export class TerminalApiService {
   }
 
   public setUrl(value: string): number {
-    let url;
- 
-    try{ url = new URL(value); console.log(url)}catch(_){ return -1; }
+  let url;
 
-    if(!( url.protocol == 'ws:' || url.protocol == 'wss:' )){ return -2; }
-    if(!( value.startsWith('ws://') || value.startsWith('wss://'))){ return -1; }
-    console.log("setUrl:valid!")
-    this.resetAllConnections()
-    this._url = url.href
-    console.log("setUrl:href:",url.href)
-
-    return 0;
+  try { 
+    url = new URL(value); 
+  } catch(_) { 
+    return -1; 
   }
+
+  if(!( url.protocol == 'ws:' || url.protocol == 'wss:' )) { 
+    return -2; 
+  }
+
+  if(!( value.startsWith('ws://') || value.startsWith('wss://'))) { 
+    return -1; 
+  }
+
+  this.resetAllConnections();
+
+  let href = url.href;
+  if (!href.endsWith('/')) {
+    href += '/';
+  }
+  this._url = href;
+
+  return 0;
+}
+
 
   public resetAllConnections(){
     //TODO: is it necessary to kill all old connection upon URL change ?
