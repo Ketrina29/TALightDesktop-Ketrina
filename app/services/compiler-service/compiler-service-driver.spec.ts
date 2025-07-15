@@ -548,24 +548,23 @@ it('should ignore unknown message type in didRecieve()', () => {
   // s'ka nevojë për më shumë: thjesht sigurohemi që nuk rrëzohet (crash)
 });
 
+
 it('should resolve to null for unknown message type in sendMessage()', async () => {
   const driver = new CompilerDriver(mockWorker as Worker);
 
-  // Thirrje që niset e pret një përgjigje (por ne e japim vetë atë përgjigje)
   const promise = (driver as any).sendMessage({
     type: 'UnknownType',
     args: [],
-    contents: []
+    contents: [],
+    uid: '123'
   });
 
-  const uid = Array.from((driver as any).requestIndex.keys())[0];
-
   const fakeResponse = {
-    uid,
+    uid: '123',
     timestamp: Date.now(),
     success: true,
     message: {
-      uid,
+      uid: '123',
       type: 'UnknownType',
       args: [],
       contents: []
@@ -573,12 +572,13 @@ it('should resolve to null for unknown message type in sendMessage()', async () 
     errors: []
   };
 
-  // Simulo përgjigjen që do vinte nga WebWorker
+  // Simulojmë marrjen e përgjigjes
   (driver as any).didRecieve(fakeResponse);
 
   const result = await promise;
   expect(result).toBeNull();
 });
+
 it('should handle CompilerState message in handleWorkerMessage()', () => {
   const driver = new CompilerDriver(mockWorker as Worker);
   const cb = jasmine.createSpy('stateCb');
@@ -591,10 +591,9 @@ it('should handle CompilerState message in handleWorkerMessage()', () => {
     }
   };
 
-  (driver as any)['handleWorkerMessage'](message);
+  (driver as any).handleWorkerMessage(message);
   expect(cb).toHaveBeenCalledWith('Ready');
 });
-
 
 
 });

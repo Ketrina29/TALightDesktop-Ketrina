@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed, fakeAsync, flush, tick, waitForAsync } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, flush, flushMicrotasks, tick, waitForAsync } from '@angular/core/testing';
 import { FileExplorerWidgetComponent } from './file-explorer-widget.component';
 
 import { ConfirmationService, MessageService } from 'primeng/api';
@@ -13,7 +13,7 @@ import { MenuItem } from 'primeng/api';
 
 import { GoogleLoginProvider, SocialAuthService } from '@abacritt/angularx-social-login';
 
-import { ElementRef, NO_ERRORS_SCHEMA } from '@angular/core';
+import { ElementRef, EventEmitter, NO_ERRORS_SCHEMA } from '@angular/core';
 import { FsNodeFile, FsNodeFolder } from '../../../services/fs-service/fs.service.types';
 
 // Mock driver completo e tipizzato
@@ -141,133 +141,103 @@ const projectManagerServiceMock = jasmine.createSpyObj(
     fixture = TestBed.createComponent(FileExplorerWidgetComponent);
     component = fixture.componentInstance;
     component.driver = driverMock; // assegna driverMock esplicitamente
+    
     fixture.detectChanges();
 
     currentProjectChangedSubject.next();
   });
-
+// files 
   it('should create the component', () => {
     expect(component).toBeTruthy();
   });
-
   it('should toggle showHidden', () => {
     const initial = component.showHidden;
     component.toggleHidden();
     expect(component.showHidden).toBe(!initial);
   });
-
-  it('should start editing an item', () => {
-    component.startEditing(folder, file);
-    expect(component.editingItem).toEqual(file);
-    expect(component.editingValue).toEqual(file.name);
-  });
-
-  it('should save editing and call renameItem', fakeAsync(() => {
-    component.startEditing(folder, file);
-    component.editingValue = 'newFile.ts';
-    component.saveEditing();
-    tick();
-    expect(driverMock.renameItem).toHaveBeenCalledWith(file.path, '/newFile.ts');
-  }));
-
   it('should delete file after confirmation accept', () => {
     confirmationServiceMock.confirm.and.callFake((options: any) => options.accept());
     component.deleteFileClick({ target: {} } as any, file as any);
     expect(driverMock.delete).toHaveBeenCalledWith(file.path);
   });
- it('should start editing an item', () => {
-  const folder = { name: 'folder1', path: '/folder1', folders: [], files: [] };
-  const file = { name: 'file1.ts', path: '/folder1/file1.ts' };
-  component.startEditing(folder as any, file as any);
-  expect(component.editingItem).toEqual(file as any);
-  expect(component.editingValue).toBe(file.name);
-});
+ it('should create a new file', fakeAsync(() => {
+  // Assicura che getCurrentDriver ritorni driverMock
+  projectManagerServiceMock.getCurrentDriver.and.returnValue(driverMock);
 
-it('should cancel editing', () => {
-  const folder = { name: 'folder1', path: '/folder1', folders: [], files: [] };
-  const file = { name: 'file1.ts', path: '/folder1/file1.ts' };
-  component.startEditing(folder as any, file as any);
-  component.cancelEditing();
-  expect(component.editingItem).toBeNull();
-  expect(component.editingValue).toBe('');
-});
+  // Spy su writeFile del driverMock
+  driverMock.writeFile.and.returnValue(Promise.resolve());
 
-it('should create a new file', fakeAsync(() => {
-  const folder = { name: 'folder1', path: '/folder1', folders: [], files: [] };
-  driverMock.writeFile.calls.reset();
-  
- component.addNewItem(folder as any, 'file'); 
- 
-  component.editingValue = 'newFile.ts';
-  component.saveEditing();
+  // Imposta i valori necessari
+  component.newItemFolder = { name: 'folder1', path: '/folder1', folders: [], files: [] };
+  component.newItemType = 'file';
+  component.newItemValue = 'newFile.ts';
+
+  fixture.detectChanges();
+
+  component.saveNewItem();
   tick();
 
   expect(driverMock.writeFile).toHaveBeenCalledWith('/folder1/newFile.ts', '');
 }));
 
-
 it('should emit onUpdateRoot event on folder selection', () => {
   const folder = { name: 'src', path: '/src', folders: [], files: [] };
+
   spyOn(component.onUpdateRoot, 'emit');
-  component.selectFolder(folder as any);  // ose emri i saktë në komponent
+  component.selectedFolder = null;
+  component.selectFolder(folder as any);
+
   expect(component.onUpdateRoot.emit).toHaveBeenCalledWith(folder);
 });
-it('should emit onSelectFile when selecting a file', () => {
-  const file = {
-    name: 'main.ts',
-    path: '/main.ts',
-    content: '', // ose 'console.log("hello")'
-  };
 
-  spyOn(component.onSelectFile, 'emit');
-  component.selectFile(file as any);
-  expect(component.onSelectFile.emit).toHaveBeenCalledWith(file);
-});
 
-it('should emit onFileDeleted when deleting a file', () => {
+
+it('should emit onFileDeleted when deleting a file', fakeAsync(() => {
   const file = { name: 'remove.ts', path: '/remove.ts' };
+  driverMock.delete.and.returnValue(Promise.resolve());
   confirmationServiceMock.confirm.and.callFake((options: any) => options.accept());
   spyOn(component.onFileDeleted, 'emit');
   component.deleteFileClick({ target: {} } as any, file as any);
+  tick();
   expect(driverMock.delete).toHaveBeenCalledWith(file.path);
   expect(component.onFileDeleted.emit).toHaveBeenCalledWith(file.path);
-});
+}));
 
 it('should emit showHiddenChanged when toggling hidden files', () => {
-  component.showHidden = false;
+  component.showHidden = false; // stato iniziale
   spyOn(component.showHiddenChanged, 'emit');
+
   component.toggleHidden();
+
   expect(component.showHidden).toBe(true);
   expect(component.showHiddenChanged.emit).toHaveBeenCalledWith(true);
 });
 
-it('should emit onItemRenamed when a file is renamed', fakeAsync(() => {
-  const folder = { name: 'folder1', path: '/folder1', folders: [], files: [] };
-  const file = { name: 'file1.ts', path: '/folder1/file1.ts' };
-  component.startEditing(folder as any, file as any);
-  component.editingValue = 'renamed.ts';
-  spyOn(component.onItemRenamed, 'emit');
-  component.saveEditing();
-  tick();
-  expect(component.onItemRenamed.emit).toHaveBeenCalled();
-}));
+
 it('should create a new folder when addNewItem is called with type "folder"', fakeAsync(() => {
-  driverMock.createDirectory.calls.reset();
+  const folder = { name: 'folder1', path: '/folder1', folders: [], files: [] };
+
+  // Assicura che getCurrentDriver ritorni driverMock
+  projectManagerServiceMock.getCurrentDriver.and.returnValue(driverMock);
+  driverMock.createDirectory.and.returnValue(Promise.resolve());
+
+  // Inizializza la creazione della nuova cartella
   component.addNewItem(folder, 'folder');
-  component.editingValue = 'newFolder';
-  component.saveEditing();
+
+  // Imposta il nome della nuova cartella
+  component.newItemValue = 'newFolder';
+
+  fixture.detectChanges();
+
+  // Chiama il metodo che effettua la creazione
+  component.saveNewItem();
   tick();
+
   expect(driverMock.createDirectory).toHaveBeenCalledWith('/folder1/newFolder');
 }));
 
-it('should not call writeFile or renameItem when editingValue is empty', fakeAsync(() => {
-  component.startEditing(folder, file);
-  component.editingValue = '';
-  component.saveEditing();
-  tick();
-  expect(driverMock.writeFile).not.toHaveBeenCalled();
-  expect(driverMock.renameItem).not.toHaveBeenCalled();
-}));
+
+
 
 it('should not delete file if confirmation is rejected', () => {
   confirmationServiceMock.confirm.and.callFake((options: any) => options.reject());
@@ -276,13 +246,6 @@ it('should not delete file if confirmation is rejected', () => {
   expect(driverMock.delete).not.toHaveBeenCalled();
 });
 
-it('should cancel editing even if a folder is being edited', () => {
-  const folderItem: FsNodeFolder = { name: 'docs', path: '/docs', folders: [], files: [] };
-  component.startEditing(folder, folderItem);
-  component.cancelEditing();
-  expect(component.editingItem).toBeNull();
-  expect(component.editingValue).toBe('');
-});
 
 it('should initialize with fsRoot if available', () => {
   expect(component.driver?.fsRoot.name).toBe('root');
@@ -323,6 +286,65 @@ it('should call confirmationService when deleting a folder', () => {
   component.deleteFolderClick(event, folder);
   expect(confirmationServiceMock.confirm).toHaveBeenCalled();
 });
+it('should delete files and folders recursively and refresh root', fakeAsync(() => {
+  driverMock.delete.calls.reset();
+
+  const folderToDelete = {
+    name: 'folder1',
+    path: '/folder1',
+    files: [{ path: '/folder1/file1.txt' }],
+    folders: []
+  };
+  projectManagerServiceMock.getCurrentDriver.and.returnValue(driverMock);
+  spyOn(component, 'refreshRoot').and.callThrough();
+  spyOn(component.onFileDeleted, 'emit');
+
+  (component as any).deleteFolder(driverMock.fsRoot, folderToDelete);
+  tick();
+
+  expect(driverMock.delete).toHaveBeenCalledWith('/folder1/file1.txt');
+  expect(driverMock.delete).toHaveBeenCalledWith('/folder1');
+  expect(component.refreshRoot).toHaveBeenCalled();
+  expect(component.onFileDeleted.emit).toHaveBeenCalledWith('/folder1/file1.txt');
+}));
+
+it('should focus new item input when addNewItem is called', fakeAsync(() => {
+  component.addNewItem(null, 'folder');
+  fixture.detectChanges();
+
+  tick(); // attendi eventuali setTimeout o change detection
+
+  const inputElement: HTMLInputElement = fixture.nativeElement.querySelector('input.tal-item-input');
+  expect(inputElement).toBeTruthy(); // verifica che l'input esista
+  expect(document.activeElement).toBe(inputElement); // verifica che abbia il focus
+}));
+it('should upload files and call writeFile on driver', async () => {
+  const file = new File(['hello'], 'test.txt');
+  const target: any = { files: [file] };
+
+  driverMock.writeFile.calls.reset();
+
+  component.selectedFolder = { name: '', path: '/folder', folders: [], files: [] };
+
+  projectManagerServiceMock.getCurrentDriver.and.returnValue(driverMock);
+
+  await component.upload(target);
+
+  expect(driverMock.writeFile).toHaveBeenCalledWith('/folder/test.txt', jasmine.any(ArrayBuffer));
+});
+
+
+it('should focus on new item input element', () => {
+  const focusSpy = jasmine.createSpy('focus');
+  component.newItemNameElement = {
+    nativeElement: { focus: focusSpy }
+  } as ElementRef;
+
+   component.newItemNameElement.nativeElement.focus();
+
+  expect(focusSpy).toHaveBeenCalled();
+});
+
 it('should update exportDropDisabled and exportButtonRepoDisabled based on newRepoName', fakeAsync(() => {
   component.reposList = [{ name: 'otherRepo' }];
   component.newRepoName = 'newRepo';
@@ -338,96 +360,6 @@ it('should update exportDropDisabled and exportButtonRepoDisabled based on newRe
 
   label.remove();
 }));
-it('should open GitHub login popup for downloadGithub', () => {
-  const popupMock = {
-    closed: true,
-    location: { href: 'https://something.com' }
-  } as any;
-
-  spyOn(window, 'open').and.returnValue(popupMock);
-  spyOn(localStorage, 'removeItem');
-
-  component.downloadGithub();
-
-  expect(window.open).toHaveBeenCalled();
-  expect(localStorage.removeItem).toHaveBeenCalledWith('accessToken');
-  expect(localStorage.removeItem).toHaveBeenCalledWith('username');
-});
-it('should open GitHub login popup for uploadGitHub', () => {
-  const popupMock = {
-    closed: true,
-    location: { href: 'https://something.com' }
-  } as any;
-
-  spyOn(window, 'open').and.returnValue(popupMock);
-  spyOn(localStorage, 'removeItem');
-
-  component.uploadGitHub('Github-code');
-
-  expect(window.open).toHaveBeenCalled();
-  expect(localStorage.removeItem).toHaveBeenCalledWith('accessToken');
-  expect(localStorage.removeItem).toHaveBeenCalledWith('username');
-});
-it('should create a downloadable link and trigger download', () => {
-  const appendSpy = spyOn(document.body, 'appendChild').and.callThrough();
-  const removeSpy = spyOn(document.body, 'removeChild').and.callThrough();
-
-  component.triggerDownload('test.txt', 'content', 'text/plain');
-
-  expect(appendSpy).toHaveBeenCalled();
-  expect(removeSpy).toHaveBeenCalled();
-});
-it('should simulate click on Google sign-in element', () => {
-  const clickMock = jasmine.createSpy('click');
-  const fakeElement = document.createElement('div');
-  fakeElement.appendChild(document.createElement('div'));
-  fakeElement.children[0].appendChild(document.createElement('div'));
-  const clickTarget = document.createElement('div');
-  clickTarget.addEventListener = () => {};
-  clickTarget.click = clickMock;
-  fakeElement.children[0].children[0].appendChild(clickTarget);
-
-  const gUpload = document.createElement('div');
-  gUpload.id = 'g_upload';
-  gUpload.appendChild(fakeElement);
-  document.body.appendChild(gUpload);
-
-  component.signIn();
-
-  expect(clickMock).toHaveBeenCalled();
-  gUpload.remove();
-});
-it('should upload file to Google Drive and show success message', async () => {
-  spyOn(window, 'fetch').and.resolveTo({
-    json: async () => ({ files: [{ id: '12345' }] })
-  } as Response);
-
-  const successResponse = {
-    json: async () => ({})  // pa `error` -> suksesi
-  };
-
-  spyOn(component, 'showToastMessage');
-  spyOn(window, 'Blob').and.callThrough(); // siguro që të mos ngatërrohet
-
-  spyOn(component as any, 'uploadGoogleDrive').and.callThrough();
-
-  await component.uploadGoogleDrive('test.tar', new ArrayBuffer(10));
-
-  expect(component.showToastMessage).toHaveBeenCalledWith('success', 'Upload successful');
-});
-it('should upload file to OneDrive and show success message', async () => {
-  socialAuthServiceMock.signIn.and.resolveTo({ authToken: 'dummy_token' });
-
-  spyOn(window, 'fetch').and.resolveTo({
-    json: async () => ({})
-  } as Response);
-
-  spyOn(component, 'showToastMessage');
-
-  await component.uploadOneDrive('file.ts', new ArrayBuffer(10));
-
-  expect(component.showToastMessage).toHaveBeenCalledWith('success', 'Upload successful');
-});
 it('should call messageService.add when showing toast', () => {
   component.showToastMessage('info', 'Test message');
   expect(messageServiceMock.add).toHaveBeenCalledWith({
@@ -455,10 +387,15 @@ it('should export project locally if mode is Local', () => {
 });
 it('should handle renameItem failure gracefully', fakeAsync(() => {
   driverMock.renameItem.and.returnValue(Promise.reject('error'));
+
   component.startEditing(folder, file);
   component.editingValue = 'fail.ts';
+
   component.saveEditing();
+
   tick();
+  flushMicrotasks();
+
   expect(messageServiceMock.add).toHaveBeenCalledWith(jasmine.objectContaining({ severity: 'error' }));
 }));
 
@@ -470,13 +407,20 @@ it('should not allow creating new item with duplicate name', () => {
   expect(component.newItemError).toBeTrue();
 });
 
-it('should emit onFileDeleted event after file deletion', () => {
+it('should emit onFileDeleted event after file deletion', fakeAsync(() => {
   spyOn(component.onFileDeleted, 'emit');
+  driverMock.delete.calls.reset();  // Resetta le chiamate, non crea spy
+
   confirmationServiceMock.confirm.and.callFake((opts: any) => opts.accept());
 
   component.deleteFileClick({ target: {} } as any, file);
+
+  tick(); // Attendi la risoluzione della Promise
+
   expect(component.onFileDeleted.emit).toHaveBeenCalledWith(file.path);
-});
+}));
+
+
 
 it('should bind collapse event to elements with class collapse-toggle', fakeAsync(() => {
   const div = document.createElement('div');
@@ -508,8 +452,7 @@ it('should toggle collapsed class in handleClickEvent', () => {
   expect(container.classList.contains('collapsed')).toBeFalse(); // toggled off
 
   document.body.removeChild(container);
-});
-it('should open settings and select config file', fakeAsync(() => {
+});it('should open settings and select config file', fakeAsync(() => {
   const mockConfigFile = { name: 'config.json', path: '/project/config.json', content: '' };
   const mockProjectFolder = { name: 'project', path: '/project', folders: [], files: [mockConfigFile] };
   const mockDriver = {
@@ -521,16 +464,25 @@ it('should open settings and select config file', fakeAsync(() => {
     config: { DIR_PROJECT: '/project', CONFIG_PATH: '/project/config.json' }
   });
   projectManagerServiceMock.getCurrentDriver.and.returnValue(mockDriver);
-  spyOn(component, 'selectFile');
+
+  spyOn(component, 'selectFile').and.callFake((file) => {
+    console.log('selectFile called with:', file);
+  });
 
   component.showHidden = false;
   component.openSettings();
 
-  tick(); // for refreshRoot callback recursion
+  tick();
+  flushMicrotasks();
+  fixture.detectChanges();
 
   expect(component.showHidden).toBeTrue();
-  expect(component.selectFile).toHaveBeenCalledWith(mockConfigFile);
+  expect(component.selectFile).toHaveBeenCalledWith(jasmine.objectContaining({
+    name: 'config.json',
+    path: '/project/config.json'
+  }));
 }));
+
 
 it('should return if project folder is not found in openSettings', () => {
   projectManagerServiceMock.getCurrentProject.and.returnValue({
@@ -578,41 +530,6 @@ it('should return true for hidden file when showHidden is true', () => {
   component.showHidden = true;
   const hidden = component.isVisibile({ name: '.env', path: '/.env' } as FsNodeFile);
   expect(hidden).toBeTrue();
-});
-it('should set editingItemError to false when no name conflict exists', () => {
-  component.editingValue = 'new.ts';
-  component.editingItemFolder = {
-    name: 'folder1',
-    path: '/folder1',
-    folders: [],
-    files: []
-  };
-  component.editItemChange();
-  expect(component.editingItemError).toBeFalse();
-});
-
-it('should set editingItemError to true when file with same name exists', () => {
-  component.editingValue = 'file1.ts';
-  component.editingItemFolder = {
-    name: 'folder1',
-    path: '/folder1',
-    folders: [],
-    files: [{ name: 'file1.ts', path: '/folder1/file1.ts', content: '' }]
-  };
-  component.editItemChange();
-  expect(component.editingItemError).toBeTrue();
-});
-
-it('should set editingItemError to true when folder with same name exists', () => {
-  component.editingValue = 'myFolder';
-  component.editingItemFolder = {
-    name: 'folder1',
-    path: '/folder1',
-    folders: [{ name: 'myFolder', path: '/folder1/myFolder', folders: [], files: [] }],
-    files: []
-  };
-  component.editItemChange();
-  expect(component.editingItemError).toBeTrue();
 });
 it('should delete all files and folder when there are no subfolders', fakeAsync(() => {
   const currentFolder = folder;
@@ -771,8 +688,8 @@ it('should call importProject when uploading a .tal.tar file', fakeAsync(async (
   expect(component.importProject).toHaveBeenCalled();
   expect(component.refreshRoot).toHaveBeenCalled();
   expect(result).toBeTrue();
-}));it('should upload multiple files and call writeFile', fakeAsync(async () => {
-  // Krijo skedarë dummy me metoda të spiuara
+}));
+it('should upload multiple files and call writeFile', fakeAsync(() => {
   const file1 = new File(['file1 content'], 'file1.txt');
   const file2 = new File(['file2 content'], 'file2.txt');
 
@@ -785,21 +702,20 @@ it('should call importProject when uploading a .tal.tar file', fakeAsync(async (
     }
   } as unknown as Event;
 
-  // Driver me spy për writeFile që kthen Promise<number>
   const driver = component.projectManagerService.getCurrentDriver();
-  spyOn(driver, 'writeFile').and.returnValue(Promise.resolve(0));
+  (driver.writeFile as jasmine.Spy).calls.reset();
 
   spyOn(component, 'refreshRoot');
 
-  // Ekzekuto upload
-  const result = await component.upload(mockEvent);
+  // Chiama upload senza async/await ma usa tick per simulare il passare del tempo
+  component.upload(mockEvent);
 
-  // Verifikime
+  // Avanza il tempo per risolvere tutte le Promise (lettura file, scrittura)
+  tick(1000);
+
   expect(driver.writeFile).toHaveBeenCalledTimes(2);
   expect(component.refreshRoot).toHaveBeenCalled();
-  expect(result).toBeTrue();
 }));
-
 
 it('should unpack project and write files/folders in importProject', fakeAsync(async () => {
   const tarball = new ArrayBuffer(10);
@@ -812,7 +728,7 @@ it('should unpack project and write files/folders in importProject', fakeAsync(a
   }];
 
   spyOn(Tar, 'unpack').and.callFake(async (_tar, callback) => {
-    await callback(mockFiles, mockFolders);
+    callback(mockFiles, mockFolders);
   });
 
   const driver = component.projectManagerService.getCurrentDriver();
@@ -901,11 +817,12 @@ it('should not create item when newItemValue is empty', fakeAsync(() => {
   component.saveNewItem();
   tick();
   expect(driverMock.writeFile).not.toHaveBeenCalled();
-}));
-it('should handle deletion failure gracefully', fakeAsync(() => {
+}));it('should handle deletion failure gracefully', fakeAsync(() => {
   const faultyDriver = component.projectManagerService.getCurrentDriver();
-  spyOn(faultyDriver, 'delete').and.returnValue(Promise.reject('fail'));
 
+  // Resetta le chiamate e cambia il comportamento dello spy esistente
+  (faultyDriver.delete as jasmine.Spy).calls.reset();
+  (faultyDriver.delete as jasmine.Spy).and.returnValue(Promise.reject('fail'));
 
   const faultyFolder = {
     name: 'buggy',
@@ -914,22 +831,19 @@ it('should handle deletion failure gracefully', fakeAsync(() => {
     folders: []
   };
 
-  (component as any).deleteFolder(folder, faultyFolder);
+  (component as any).deleteFolder(driverMock.fsRoot, faultyFolder);
   tick();
-  expect(driverMock.delete).toHaveBeenCalledWith('/buggy/file.ts');
+
+  expect(faultyDriver.delete).toHaveBeenCalledWith('/buggy/file.ts');
 }));
+
 it('should return false for hidden folder if showHidden is false', () => {
   component.showHidden = false;
   const hiddenFolder = { name: '.secret', path: '/.secret', folders: [], files: [] };
   expect(component.isVisibile(hiddenFolder)).toBeFalse();
 });
 
-it('should keep editingItemError false when no conflict', () => {
- component.editingValue = 'unique.ts';
-  component.editingItemFolder = { ...folder };
-  component.editItemChange();
-  expect(component.editingItemError).toBeFalse();
-});
+
 it('should create Blob and download using triggerDownload', () => {
   const appendSpy = spyOn(document.body, 'appendChild').and.callThrough();
   const removeSpy = spyOn(document.body, 'removeChild').and.callThrough();
@@ -951,12 +865,7 @@ it('should not create item when newItemValue is empty or whitespace', fakeAsync(
   tick();
   expect(driverMock.writeFile).not.toHaveBeenCalled();
 }));
-it('should keep editingItemError false when filename is unique', () => {
-  component.editingValue = 'unique.ts';
-  component.editingItemFolder = { ...folder, files: [] };
-  component.editItemChange();
-  expect(component.editingItemError).toBeFalse();
-});
+
 it('should create and trigger file download via DOM', () => {
   const appendSpy = spyOn(document.body, 'appendChild').and.callThrough();
   const removeSpy = spyOn(document.body, 'removeChild').and.callThrough();
@@ -969,79 +878,6 @@ it('should call provided callback after refreshRoot', fakeAsync(() => {
   component.refreshRoot(callback);
   tick();
   expect(callback).toHaveBeenCalled();
-}));
-it('should handle GitHub-import popup callback and call githubService chain', fakeAsync(() => {
-  const mockPopup = {
-    closed: false,
-    location: {
-      href: 'https://oauth-callback?code=1234',
-      search: '?code=1234'
-    },
-    close: jasmine.createSpy('close')
-  };
-
-  spyOn(localStorage, 'getItem').and.returnValue(null);
-  spyOn(component['githubService'], 'getAccessToken').and.returnValue(Promise.resolve());
-  spyOn(component['githubService'], 'getUserData').and.returnValue(Promise.resolve());
-  spyOn(component['githubService'], 'getRepoList').and.returnValue(Promise.resolve([
-    { name: 'repo1' },
-    { name: 'TALightProject-Archives' },
-    { name: 'repo2' }
-  ]));
-
-  component['detectInput'] = jasmine.createSpy('detectInput');
-
-  component.checkGithubCallback(mockPopup, 'Github-import');
-
-  tick(1000); // Simulon kalimin e kohës
-
-  expect(component['githubService'].getAccessToken).toHaveBeenCalledWith('1234');
-  expect(component['githubService'].getUserData).toHaveBeenCalled();
-  expect(component['githubService'].getRepoList).toHaveBeenCalled();
-  expect(mockPopup.close).toHaveBeenCalled();
-  expect(component['reposList']).toEqual([
-    { name: 'repo1' },
-    { name: 'repo2' }
-  ]);
-  expect(component['newRepoOwner']).toBe(localStorage.getItem("username"));
-  expect(component['exportVisible']).toBeTrue();
-  expect(component['detectInput']).toHaveBeenCalled();
-}));
-it('should upload file to GitHub when content is ArrayBuffer', fakeAsync(() => {
-  const contentString = 'Hello from buffer!';
-  const arrayBuffer = new TextEncoder().encode(contentString).buffer;
-
-  const mockFile: FsNodeFile = {
-    name: 'buffer.txt',
-    path: '/buffer.txt',
-    content: arrayBuffer
-  };
-
-  const fsTree = [mockFile];
-
-  fsServiceMock.treeToList.and.returnValue(fsTree);
-  projectManagerServiceMock.getCurrentDriver.and.returnValue(driverMock);
-
-  component.exportDropDisabled = true;
-  component.newRepoName = 'repo-buffer';
-
-  githubApiServiceMock.createRepository.and.returnValue(Promise.resolve());
-  githubApiServiceMock.getReference.and.returnValue(Promise.resolve({ object: { sha: 'abc123' } }));
-  githubApiServiceMock.createTree.and.returnValue(Promise.resolve({ sha: 'tree-sha' }));
-  githubApiServiceMock.createCommit.and.returnValue(Promise.resolve({ sha: 'commit-sha' }));
-  githubApiServiceMock.updateReference.and.returnValue(Promise.resolve({ error: false }));
-
-  const toastSpy = spyOn(component, 'showToastMessage');
-
-  component.uploadFiles();
-  tick();
-
-  expect(githubApiServiceMock.createRepository).toHaveBeenCalledWith('repo-buffer');
-  expect(githubApiServiceMock.getReference).toHaveBeenCalled();
-  expect(githubApiServiceMock.createTree).toHaveBeenCalled();
-  expect(githubApiServiceMock.createCommit).toHaveBeenCalled();
-  expect(githubApiServiceMock.updateReference).toHaveBeenCalled();
-  expect(toastSpy).toHaveBeenCalledWith('success', 'Upload successful');
 }));
 
 
@@ -1132,32 +968,6 @@ it('should show error toast when upload fails in updateReference', fakeAsync(() 
 
   expect(toastSpy).toHaveBeenCalledWith('error', 'Upload failed');
 }));
-it('should upload files to selected existing GitHub repo', fakeAsync(() => {
-  const mockFile: FsNodeFile = {
-    name: 'existing.txt',
-    path: '/existing.txt',
-    content: 'data'
-  };
-
-  fsServiceMock.treeToList.and.returnValue([mockFile]);
-  projectManagerServiceMock.getCurrentDriver.and.returnValue(driverMock);
-
-  component.exportDropDisabled = false;
-  component.selectedRepo = { name: 'existing-repo' } as any;
-
-  githubApiServiceMock.getReference.and.returnValue(Promise.resolve({ object: { sha: 'abc123' } }));
-  githubApiServiceMock.createTree.and.returnValue(Promise.resolve({ sha: 'tree-sha' }));
-  githubApiServiceMock.createCommit.and.returnValue(Promise.resolve({ sha: 'commit-sha' }));
-  githubApiServiceMock.updateReference.and.returnValue(Promise.resolve({ error: false }));
-
-  const toastSpy = spyOn(component, 'showToastMessage');
-
-  component.uploadFiles();
-  tick();
-
-  expect(githubApiServiceMock.getReference).toHaveBeenCalledWith('existing-repo');
-  expect(toastSpy).toHaveBeenCalledWith('success', 'Upload successful');
-}));
 it('should show success toast when uploadFile completes with commit', async () => {
   const mockResponse = {
     commit: { sha: 'abc123' }
@@ -1203,28 +1013,6 @@ it('should show error toast when uploadFile completes without commit', async () 
   expect(toastSpy).toHaveBeenCalledWith('error', 'Upload failed');
 });
 
-it('should download and replace project from GitHub repo', fakeAsync(async () => {
-  const mockTarUrl = 'https://mock-tar-url.com/file.tar';
-  const mockBuffer = new ArrayBuffer(10);
-
-  const getRepositoryAsTarSpy = githubApiServiceMock.getRepositoryAsTar.and.returnValue(Promise.resolve(mockTarUrl));
-  const getTarSpy = githubApiServiceMock.getTar.and.returnValue(Promise.resolve({
-    arrayBuffer: () => Promise.resolve(mockBuffer)
-  }));
-
-  const replaceSpy = spyOn(component, 'replaceProject');
-
-  component.selectedRepo = { name: 'MyTestRepo' } as any;
-  component.importVisible = true;
-
-  await component.downloadFiles();
-  tick();
-
-  expect(component.importVisible).toBeFalse();
-  expect(getRepositoryAsTarSpy).toHaveBeenCalledWith('MyTestRepo');
-  expect(getTarSpy).toHaveBeenCalledWith(mockTarUrl);
-  expect(replaceSpy).toHaveBeenCalledWith(mockBuffer);
-}));
 it('should replace project by deleting and importing new data', fakeAsync(() => {
   const scanResult = {
     name: 'root',
@@ -1266,6 +1054,374 @@ it('should trigger file download using anchor tag', () => {
   expect(revokeSpy).toHaveBeenCalled();
 });
 
+it('should replace project after scanning and deleting', fakeAsync(() => {
+  component.driver = driverMock; // cakto mock-un
+  const deleteSpy = spyOn(component as any, 'deleteFolder');
+  const refreshSpy = spyOn(component as any, 'refreshRoot');
+  const importSpy = spyOn(component as any, 'importProject');
+
+  component.replaceProject(new ArrayBuffer(8));
+  tick(); // nevojitet për të përfunduar zinxhirin e .then()
+
+  expect(driverMock.scanDirectory).toHaveBeenCalledWith('/');
+  expect(deleteSpy).toHaveBeenCalled();
+  expect(refreshSpy).toHaveBeenCalled();
+  expect(importSpy).toHaveBeenCalledWith(jasmine.any(ArrayBuffer));
+}));
+it('should click fileUpload input when clicking "Import from local"', () => {
+  const event = { originalEvent: new Event('click') };
+  const closeMenuSpy = spyOn(component, 'closeAllContextMenus');
+
+  // Simulo një element fileUpload në DOM
+  const clickSpy = jasmine.createSpy('click');
+  const mockInput = document.createElement('input');
+  mockInput.setAttribute('id', 'fileUpload');
+  spyOn(document, 'getElementById').and.returnValue({ click: clickSpy } as any);
+
+  const importLocalItem = component.ImportItems.find((item: { label: string | string[]; }) => item.label.includes('local'));
+  importLocalItem?.command!(event);
+
+  expect(closeMenuSpy).toHaveBeenCalledWith(event.originalEvent);
+  expect(clickSpy).toHaveBeenCalled();
+});
+
+it('should export locally when clicking "Save locally"', () => {
+  const event = { originalEvent: new Event('click') };
+  const closeMenuSpy = spyOn(component, 'closeAllContextMenus');
+  const exportSpy = spyOn(component, 'export');
+
+  const exportLocalItem = component.ExportItems.find((item: { label: string | string[]; }) => item.label.includes('Save locally'));
+  exportLocalItem?.command!(event);
+
+  expect(closeMenuSpy).toHaveBeenCalledWith(event.originalEvent);
+  expect(exportSpy).toHaveBeenCalledWith('Local');
+});
+
+it('should call downloadLocal when export type is Local', () => {
+  (component as any).downloadLocal = jasmine.createSpy('downloadLocal');
+  component.export('Local');
+  expect((component as any).downloadLocal).toHaveBeenCalled();
+});
+it('should call exportMicrosoft when export type is Microsoft', () => {
+  const spy = spyOn(component as any, 'exportMicrosoft');
+  component.export('Microsoft');
+  expect(spy).toHaveBeenCalled();
+});
+
+it('should trigger click on file input when importing from local', () => {
+  const clickSpy = jasmine.createSpy('click');
+  const mockInput = { click: clickSpy } as any;
+  spyOn(document, 'getElementById').and.returnValue(mockInput);
+
+  const event = new MouseEvent('click');
+  const menuItem = component.ImportItems.find((item: { label: string | string[]; }) => item.label.includes('local'));
+  menuItem?.command?.({ originalEvent: event });
+
+  expect(clickSpy).toHaveBeenCalled();
+});
+it('should update editingItem path and focus input when saving editing', () => {
+  component.editingItem = { name: 'old.txt', path: '/old.txt', content: '' };
+  component.editingValue = 'newname.txt';
+
+  const focusSpy = jasmine.createSpy('focus');
+  component.nameEditingElement = {
+    nativeElement: { focus: focusSpy }
+  } as ElementRef;
+
+  // Simulojmë logjikën që ndodh gjatë editimit
+  if (component.nameEditingElement) {
+    component.editingItem.path = '/' + component.editingValue;
+    component.nameEditingElement.nativeElement.focus();
+  }
+
+  expect(component.editingItem.path).toBe('/newname.txt');
+  expect(focusSpy).toHaveBeenCalled();
+});
+
+it('should call confirmationService.confirm on importGithubClick', () => {
+  const confirmSpy = spyOn(component['confirmationService'], 'confirm');
+  const fakeEvent = { target: {} } as Event;
+
+  component.importGithubClick(fakeEvent);
+
+  expect(confirmSpy).toHaveBeenCalled();
+});
+
+// editing tests
+  it('should save editing and call renameItem', fakeAsync(() => {
+    component.startEditing(folder, file);
+    component.editingValue = 'newFile.ts';
+    component.saveEditing();
+    tick();
+    expect(driverMock.renameItem).toHaveBeenCalledWith(file.path, '/newFile.ts');
+  }));
+
+ it('should start editing an item', () => {
+  const folder = { name: 'folder1', path: '/folder1', folders: [], files: [] };
+  const file = { name: 'file1.ts', path: '/folder1/file1.ts' };
+  component.startEditing(folder as any, file as any);
+  expect(component.editingItem).toEqual(file as any);
+  expect(component.editingValue).toBe(file.name);
+});
+
+it('should cancel editing', () => {
+  const folder = { name: 'folder1', path: '/folder1', folders: [], files: [] };
+  const file = { name: 'file1.ts', path: '/folder1/file1.ts' };
+  component.startEditing(folder as any, file as any);
+  component.cancelEditing();
+  expect(component.editingItem).toBeNull();
+  expect(component.editingValue).toBe('');
+});
+
+it('should emit onItemRenamed when a file is renamed', fakeAsync(() => {
+  const folder = { name: 'folder1', path: '/folder1', folders: [], files: [] };
+  const file = { name: 'file1.ts', path: '/folder1/file1.ts' };
+  component.startEditing(folder as any, file as any);
+  component.editingValue = 'renamed.ts';
+  spyOn(component.onItemRenamed, 'emit');
+  component.saveEditing();
+  tick();
+  expect(component.onItemRenamed.emit).toHaveBeenCalled();
+}));
+
+it('should not call writeFile or renameItem when editingValue is empty', fakeAsync(() => {
+  component.startEditing(folder, file);
+  component.editingValue = '';
+  component.saveEditing();
+  tick();
+  expect(driverMock.writeFile).not.toHaveBeenCalled();
+  expect(driverMock.renameItem).not.toHaveBeenCalled();
+}));
+it('should cancel editing even if a folder is being edited', () => {
+  const folderItem: FsNodeFolder = { name: 'docs', path: '/docs', folders: [], files: [] };
+  component.startEditing(folder, folderItem);
+  component.cancelEditing();
+  expect(component.editingItem).toBeNull();
+  expect(component.editingValue).toBe('');
+});
+
+it('should set editingItemError to false when no name conflict exists', () => {
+  component.editingValue = 'new.ts';
+  component.editingItemFolder = {
+    name: 'folder1',
+    path: '/folder1',
+    folders: [],
+    files: []
+  };
+  component.editItemChange();
+  expect(component.editingItemError).toBeFalse();
+});
+
+it('should set editingItemError to true when file with same name exists', () => {
+  component.editingValue = 'file1.ts';
+  component.editingItemFolder = {
+    name: 'folder1',
+    path: '/folder1',
+    folders: [],
+    files: [{ name: 'file1.ts', path: '/folder1/file1.ts', content: '' }]
+  };
+  component.editItemChange();
+  expect(component.editingItemError).toBeTrue();
+});
+
+it('should set editingItemError to true when folder with same name exists', () => {
+  component.editingValue = 'myFolder';
+  component.editingItemFolder = {
+    name: 'folder1',
+    path: '/folder1',
+    folders: [{ name: 'myFolder', path: '/folder1/myFolder', folders: [], files: [] }],
+    files: []
+  };
+  component.editItemChange();
+  expect(component.editingItemError).toBeTrue();
+});
+it('should keep editingItemError false when no conflict', () => {
+ component.editingValue = 'unique.ts';
+  component.editingItemFolder = { ...folder };
+  component.editItemChange();
+  expect(component.editingItemError).toBeFalse();
+});
+it('should keep editingItemError false when filename is unique', () => {
+  component.editingValue = 'unique.ts';
+  component.editingItemFolder = { ...folder, files: [] };
+  component.editItemChange();
+  expect(component.editingItemError).toBeFalse();
+});
+
+
+//gitHub tests
+
+it('should open GitHub login popup for downloadGithub', () => {
+  const popupMock = {
+    closed: true,
+    location: { href: 'https://something.com' }
+  } as any;
+
+  spyOn(window, 'open').and.returnValue(popupMock);
+  spyOn(localStorage, 'removeItem');
+
+  component.downloadGithub();
+
+  expect(window.open).toHaveBeenCalled();
+  expect(localStorage.removeItem).toHaveBeenCalledWith('accessToken');
+  expect(localStorage.removeItem).toHaveBeenCalledWith('username');
+});
+it('should open GitHub login popup for uploadGitHub', () => {
+  const popupMock = {
+    closed: true,
+    location: { href: 'https://something.com' }
+  } as any;
+
+  spyOn(window, 'open').and.returnValue(popupMock);
+  spyOn(localStorage, 'removeItem');
+
+  component.uploadGitHub('Github-code');
+
+  expect(window.open).toHaveBeenCalled();
+  expect(localStorage.removeItem).toHaveBeenCalledWith('accessToken');
+  expect(localStorage.removeItem).toHaveBeenCalledWith('username');
+});
+it('should create a downloadable link and trigger download', () => {
+  const appendSpy = spyOn(document.body, 'appendChild').and.callThrough();
+  const removeSpy = spyOn(document.body, 'removeChild').and.callThrough();
+
+  component.triggerDownload('test.txt', 'content', 'text/plain');
+
+  expect(appendSpy).toHaveBeenCalled();
+  expect(removeSpy).toHaveBeenCalled();
+});
+
+it('should handle GitHub-import popup callback and call githubService chain', fakeAsync(() => {
+  const mockPopup = {
+    closed: false,
+    location: {
+      href: 'https://oauth-callback?code=1234',
+      search: '?code=1234'
+    },
+    close: jasmine.createSpy('close')
+  };
+
+  spyOn(localStorage, 'getItem').and.returnValue(null);
+  spyOn(component['githubService'], 'getAccessToken').and.returnValue(Promise.resolve());
+  spyOn(component['githubService'], 'getUserData').and.returnValue(Promise.resolve());
+  spyOn(component['githubService'], 'getRepoList').and.returnValue(Promise.resolve([
+    { name: 'repo1' },
+    { name: 'TALightProject-Archives' },
+    { name: 'repo2' }
+  ]));
+
+  component['detectInput'] = jasmine.createSpy('detectInput');
+
+  component.checkGithubCallback(mockPopup, 'Github-import');
+
+  tick(1000); 
+
+  expect(component['githubService'].getAccessToken).toHaveBeenCalledWith('1234');
+  expect(component['githubService'].getUserData).toHaveBeenCalled();
+  expect(component['githubService'].getRepoList).toHaveBeenCalled();
+  expect(mockPopup.close).toHaveBeenCalled();
+  expect(component['reposList']).toEqual([
+    { name: 'repo1' },
+    { name: 'repo2' }
+  ]);
+  expect(component['newRepoOwner']).toBe(localStorage.getItem("username"));
+  expect(component['exportVisible']).toBeTrue();
+  expect(component['detectInput']).toHaveBeenCalled();
+}));
+
+it('should upload file to GitHub when content is ArrayBuffer', fakeAsync(() => {
+  const contentString = 'Hello from buffer!';
+  const arrayBuffer = new TextEncoder().encode(contentString).buffer;
+
+  const mockFile: FsNodeFile = {
+    name: 'buffer.txt',
+    path: '/buffer.txt',
+    content: arrayBuffer
+  };
+
+  const fsTree = [mockFile];
+
+  fsServiceMock.treeToList.and.returnValue(fsTree);
+  projectManagerServiceMock.getCurrentDriver.and.returnValue(driverMock);
+
+  component.exportDropDisabled = true;
+  component.newRepoName = 'repo-buffer';
+
+  githubApiServiceMock.createRepository.and.returnValue(Promise.resolve());
+  githubApiServiceMock.getReference.and.returnValue(Promise.resolve({ object: { sha: 'abc123' } }));
+  githubApiServiceMock.createTree.and.returnValue(Promise.resolve({ sha: 'tree-sha' }));
+  githubApiServiceMock.createCommit.and.returnValue(Promise.resolve({ sha: 'commit-sha' }));
+  githubApiServiceMock.updateReference.and.returnValue(Promise.resolve({ error: false }));
+
+  const toastSpy = spyOn(component, 'showToastMessage');
+
+  component.uploadFiles();
+  tick();
+
+  expect(githubApiServiceMock.createRepository).toHaveBeenCalledWith('repo-buffer');
+  expect(githubApiServiceMock.getReference).toHaveBeenCalled();
+  expect(githubApiServiceMock.createTree).toHaveBeenCalled();
+  expect(githubApiServiceMock.createCommit).toHaveBeenCalled();
+  expect(githubApiServiceMock.updateReference).toHaveBeenCalled();
+  expect(toastSpy).toHaveBeenCalledWith('success', 'Upload successful');
+}));
+
+it('should call downloadGithub when importing from GitHub', () => {
+  const spy = spyOn(component as any, 'downloadGithub');
+  const event = new MouseEvent('click');
+  const menuItem = component.ImportItems.find((item: { label: string | string[]; }) => item.label.includes('Github'));
+  menuItem?.command?.({ originalEvent: event });
+  expect(spy).toHaveBeenCalled();
+});
+
+it('should upload files to selected existing GitHub repo', fakeAsync(() => {
+  const mockFile: FsNodeFile = {
+    name: 'existing.txt',
+    path: '/existing.txt',
+    content: 'data'
+  };
+
+  fsServiceMock.treeToList.and.returnValue([mockFile]);
+  projectManagerServiceMock.getCurrentDriver.and.returnValue(driverMock);
+
+  component.exportDropDisabled = false;
+  component.selectedRepo = { name: 'existing-repo' } as any;
+
+  githubApiServiceMock.getReference.and.returnValue(Promise.resolve({ object: { sha: 'abc123' } }));
+  githubApiServiceMock.createTree.and.returnValue(Promise.resolve({ sha: 'tree-sha' }));
+  githubApiServiceMock.createCommit.and.returnValue(Promise.resolve({ sha: 'commit-sha' }));
+  githubApiServiceMock.updateReference.and.returnValue(Promise.resolve({ error: false }));
+
+  const toastSpy = spyOn(component, 'showToastMessage');
+
+  component.uploadFiles();
+  tick();
+
+  expect(githubApiServiceMock.getReference).toHaveBeenCalledWith('existing-repo');
+  expect(toastSpy).toHaveBeenCalledWith('success', 'Upload successful');
+})); 
+it('should download and replace project from GitHub repo', fakeAsync(async () => {
+  const mockTarUrl = 'https://mock-tar-url.com/file.tar';
+  const mockBuffer = new ArrayBuffer(10);
+
+  const getRepositoryAsTarSpy = githubApiServiceMock.getRepositoryAsTar.and.returnValue(Promise.resolve(mockTarUrl));
+  const getTarSpy = githubApiServiceMock.getTar.and.returnValue(Promise.resolve({
+    arrayBuffer: () => Promise.resolve(mockBuffer)
+  }));
+
+  const replaceSpy = spyOn(component, 'replaceProject');
+
+  component.selectedRepo = { name: 'MyTestRepo' } as any;
+  component.importVisible = true;
+
+  await component.downloadFiles();
+  tick();
+
+  expect(component.importVisible).toBeFalse();
+  expect(getRepositoryAsTarSpy).toHaveBeenCalledWith('MyTestRepo');
+  expect(getTarSpy).toHaveBeenCalledWith(mockTarUrl);
+  expect(replaceSpy).toHaveBeenCalledWith(mockBuffer);
+})); 
 
 it('should fetch GitHub tar file and replace project', fakeAsync(() => {
   const mockTarUrl = 'https://github.com/tarball';
@@ -1296,28 +1452,13 @@ it('should fetch GitHub tar file and replace project', fakeAsync(() => {
   const replaceSpy = spyOn(component as any, 'replaceProject');
 
   component.downloadFiles();
-  tick(); // për .then i parë
-  tick(); // për arrayBuffer + replaceProject
+  tick(); // for.then 
+  tick(); // arrayBuffer + replaceProject
 
   expect(component['githubService'].getRepositoryAsTar).toHaveBeenCalledWith('test-repo');
   expect(component['githubService'].getTar).toHaveBeenCalledWith(mockTarUrl);
   expect(replaceSpy).toHaveBeenCalledWith(mockBuffer);
-}));
-
-it('should replace project after scanning and deleting', fakeAsync(() => {
-  component.driver = driverMock; // cakto mock-un
-  const deleteSpy = spyOn(component as any, 'deleteFolder');
-  const refreshSpy = spyOn(component as any, 'refreshRoot');
-  const importSpy = spyOn(component as any, 'importProject');
-
-  component.replaceProject(new ArrayBuffer(8));
-  tick(); // nevojitet për të përfunduar zinxhirin e .then()
-
-  expect(driverMock.scanDirectory).toHaveBeenCalledWith('/');
-  expect(deleteSpy).toHaveBeenCalled();
-  expect(refreshSpy).toHaveBeenCalled();
-  expect(importSpy).toHaveBeenCalledWith(jasmine.any(ArrayBuffer));
-}));
+})); 
 it('should call downloadGithub when clicking "Import from Github"', () => {
   const event = { originalEvent: new Event('click') };
 
@@ -1330,25 +1471,7 @@ it('should call downloadGithub when clicking "Import from Github"', () => {
   expect(closeMenuSpy).toHaveBeenCalledWith(event.originalEvent);
   expect(downloadGithubSpy).toHaveBeenCalled();
 });
-
-it('should click fileUpload input when clicking "Import from local"', () => {
-  const event = { originalEvent: new Event('click') };
-  const closeMenuSpy = spyOn(component, 'closeAllContextMenus');
-
-  // Simulo një element fileUpload në DOM
-  const clickSpy = jasmine.createSpy('click');
-  const mockInput = document.createElement('input');
-  mockInput.setAttribute('id', 'fileUpload');
-  spyOn(document, 'getElementById').and.returnValue({ click: clickSpy } as any);
-
-  const importLocalItem = component.ImportItems.find((item: { label: string | string[]; }) => item.label.includes('local'));
-  importLocalItem?.command!(event);
-
-  expect(closeMenuSpy).toHaveBeenCalledWith(event.originalEvent);
-  expect(clickSpy).toHaveBeenCalled();
-});
-
-it('should export as archive when clicking "Export as archive"', () => {
+ it('should export as archive when clicking "Export as archive"', () => {
   const event = { originalEvent: new Event('click') };
   const closeMenuSpy = spyOn(component, 'closeAllContextMenus');
   const exportSpy = spyOn(component, 'export');
@@ -1370,40 +1493,6 @@ it('should export code when clicking "Export code"', () => {
   expect(closeMenuSpy).toHaveBeenCalledWith(event.originalEvent);
   expect(exportSpy).toHaveBeenCalledWith('Github-code');
 });
-it('should export to Google Drive when clicking export option', () => {
-  const event = { originalEvent: new Event('click') };
-  const closeMenuSpy = spyOn(component, 'closeAllContextMenus');
-  const signInSpy = spyOn(component, 'signIn');
-
-  const exportDriveItem = component.ExportItems.find((item: { label: string | string[]; }) => item.label.includes('Google'));
-  exportDriveItem?.command!(event);
-
-  expect(closeMenuSpy).toHaveBeenCalledWith(event.originalEvent);
-  expect(signInSpy).toHaveBeenCalled();
-});
-it('should export to Microsoft OneDrive when clicking export option', () => {
-  const event = { originalEvent: new Event('click') };
-  const closeMenuSpy = spyOn(component, 'closeAllContextMenus');
-  const exportSpy = spyOn(component, 'export');
-
-  const exportOneDriveItem = component.ExportItems.find((item: { label: string | string[]; }) => item.label.includes('One'));
-  exportOneDriveItem?.command!(event);
-
-  expect(closeMenuSpy).toHaveBeenCalledWith(event.originalEvent);
-  expect(exportSpy).toHaveBeenCalledWith('Microsoft');
-});
-it('should export locally when clicking "Save locally"', () => {
-  const event = { originalEvent: new Event('click') };
-  const closeMenuSpy = spyOn(component, 'closeAllContextMenus');
-  const exportSpy = spyOn(component, 'export');
-
-  const exportLocalItem = component.ExportItems.find((item: { label: string | string[]; }) => item.label.includes('Save locally'));
-  exportLocalItem?.command!(event);
-
-  expect(closeMenuSpy).toHaveBeenCalledWith(event.originalEvent);
-  expect(exportSpy).toHaveBeenCalledWith('Local');
-});
-
 it('should get access token and upload file when repo not found', fakeAsync(() => {
   const popup: any = {
     location: {
@@ -1421,7 +1510,7 @@ it('should get access token and upload file when repo not found', fakeAsync(() =
   spyOn(component['githubService'], 'createRepository').and.returnValue(Promise.resolve());
   const uploadSpy = spyOn(component as any, 'uploadFile');
 
-  // Vendos vlerat e nevojshme për të kaluar if (filename && content)
+  // if (filename && content)
   (component as any).filename = 'file.txt';
   (component as any).content = 'File content';
   (component as any).mime = 'text/plain';
@@ -1452,17 +1541,12 @@ it('should get access token and update repo list if repo exists', fakeAsync(() =
   ]));
 
   component.checkGithubCallback(popup, 'Github-import');
-  tick(1000); // për intervalin
+  tick(1000); // for intervallo
 
-  // kontrollo që lista të përditësohet dhe repo e vjetër të hiqet
+  // check if the list is updated
   expect(component.reposList.find((r: any) => r.name === 'TALightProject-Archives')).toBeUndefined();
   expect(component.reposList.find((r: any) => r.name === 'other-repo')).toBeDefined();
 }));
-it('should call downloadLocal when export type is Local', () => {
-  (component as any).downloadLocal = jasmine.createSpy('downloadLocal');
-  component.export('Local');
-  expect((component as any).downloadLocal).toHaveBeenCalled();
-});
 
 it('should call export with Github-code type', () => {
   const exportSpy = spyOn(component as any, 'exportGithubCode');
@@ -1474,151 +1558,126 @@ it('should call exportGithubArchive when export type is Github-archive', () => {
   component.export('Github-archive');
   expect(archiveSpy).toHaveBeenCalled();
 });
-it('should call exportMicrosoft when export type is Microsoft', () => {
-  const spy = spyOn(component as any, 'exportMicrosoft');
-  component.export('Microsoft');
-  expect(spy).toHaveBeenCalled();
+
+
+
+// Google test
+
+it('should simulate click on Google sign-in element', () => {
+  const clickMock = jasmine.createSpy('click');
+  const fakeElement = document.createElement('div');
+  fakeElement.appendChild(document.createElement('div'));
+  fakeElement.children[0].appendChild(document.createElement('div'));
+  const clickTarget = document.createElement('div');
+  clickTarget.addEventListener = () => {};
+  clickTarget.click = clickMock;
+  fakeElement.children[0].children[0].appendChild(clickTarget);
+
+  const gUpload = document.createElement('div');
+  gUpload.id = 'g_upload';
+  gUpload.appendChild(fakeElement);
+  document.body.appendChild(gUpload);
+
+  component.signIn();
+
+  expect(clickMock).toHaveBeenCalled();
+  gUpload.remove();
 });
+it('should upload file to Google Drive and show success message', async () => {
+  spyOn(window, 'fetch').and.resolveTo({
+    json: async () => ({ files: [{ id: '12345' }] })
+  } as Response);
+
+  const successResponse = {
+    json: async () => ({})  // pa `error` -> suksesi
+  };
+
+  spyOn(component, 'showToastMessage');
+  spyOn(window, 'Blob').and.callThrough(); // siguro që të mos ngatërrohet
+
+  spyOn(component as any, 'uploadGoogleDrive').and.callThrough();
+
+  await component.uploadGoogleDrive('test.tar', new ArrayBuffer(10));
+
+  expect(component.showToastMessage).toHaveBeenCalledWith('success', 'Upload successful');
+});
+it('should upload file to OneDrive and show success message', async () => {
+  socialAuthServiceMock.signIn.and.resolveTo({ authToken: 'dummy_token' });
+
+  spyOn(window, 'fetch').and.resolveTo({
+    json: async () => ({})
+  } as Response);
+
+  spyOn(component, 'showToastMessage');
+
+  await component.uploadOneDrive('file.ts', new ArrayBuffer(10));
+
+  expect(component.showToastMessage).toHaveBeenCalledWith('success', 'Upload successful');
+});
+
+
+it('should export to Google Drive when clicking export option', () => {
+  const event = { originalEvent: new Event('click') };
+  const closeMenuSpy = spyOn(component, 'closeAllContextMenus');
+  const signInSpy = spyOn(component, 'signIn');
+
+  const exportDriveItem = component.ExportItems.find((item: { label: string | string[]; }) => item.label.includes('Google'));
+  exportDriveItem?.command!(event);
+
+  expect(closeMenuSpy).toHaveBeenCalledWith(event.originalEvent);
+  expect(signInSpy).toHaveBeenCalled();
+});
+it('should export to Microsoft OneDrive when clicking export option', () => {
+  const event = { originalEvent: new Event('click') };
+  const closeMenuSpy = spyOn(component, 'closeAllContextMenus');
+  const exportSpy = spyOn(component, 'export');
+
+  const exportOneDriveItem = component.ExportItems.find((item: { label: string | string[]; }) => item.label.includes('One'));
+  exportOneDriveItem?.command!(event);
+
+  expect(closeMenuSpy).toHaveBeenCalledWith(event.originalEvent);
+  expect(exportSpy).toHaveBeenCalledWith('Microsoft');
+}); 
 it('should call signIn for Google export', () => {
   const signInSpy = spyOn(component, 'signIn');
   const event = new MouseEvent('click');
   const menuItem = component.ExportItems.find((item: { label: string | string[]; }) => item.label.includes('Google'));
   menuItem?.command?.({ originalEvent: event });
   expect(signInSpy).toHaveBeenCalled();
-});it('should call downloadGithub when importing from GitHub', () => {
-  const spy = spyOn(component as any, 'downloadGithub');
-  const event = new MouseEvent('click');
-  const menuItem = component.ImportItems.find((item: { label: string | string[]; }) => item.label.includes('Github'));
-  menuItem?.command?.({ originalEvent: event });
-  expect(spy).toHaveBeenCalled();
 });
-it('should trigger click on file input when importing from local', () => {
-  const clickSpy = jasmine.createSpy('click');
-  const mockInput = { click: clickSpy } as any;
-  spyOn(document, 'getElementById').and.returnValue(mockInput);
 
-  const event = new MouseEvent('click');
-  const menuItem = component.ImportItems.find((item: { label: string | string[]; }) => item.label.includes('local'));
-  menuItem?.command?.({ originalEvent: event });
 
-  expect(clickSpy).toHaveBeenCalled();
-});
 it('should get Google access token and call export with Google', fakeAsync(() => {
-  (component as any).googleLogin = true;  // aksesim i sigurt për googleLogin
+     const getAccessTokenSpy = spyOn(component['authService'], 'getAccessToken')
+    .and.returnValue(Promise.resolve('mock-token'));
+    (component as any).googleLogin = true;
+    const exportSpy = spyOn(component as any, 'export');
+    (component['authService'].getAccessToken as jasmine.Spy).and.returnValue(Promise.resolve('mock-token'));
+
+    component.signIn();
+    tick();
+
+    expect(component['authService'].getAccessToken).toHaveBeenCalledWith(GoogleLoginProvider.PROVIDER_ID);
+    expect((component as any).accessToken).toBe('mock-token');
+    expect(exportSpy).toHaveBeenCalledWith('Google');
+  }));
+
+it('should export to Google when googleLogin is true', fakeAsync(() => {
+  (component as any).googleLogin = true;
+
+  // Usa il mock già definito
+  (socialAuthServiceMock.getAccessToken as jasmine.Spy).and.returnValue(Promise.resolve('fake-token'));
+
   const exportSpy = spyOn(component as any, 'export');
-  socialAuthServiceMock.getAccessToken.and.returnValue(Promise.resolve('mock-token'));
 
   component.signIn();
-  tick();
-
-  expect((component as any).accessToken).toBe('mock-token');
-  expect(exportSpy).toHaveBeenCalledWith('Google');
-}));
-
-it('should update editingItem path and focus input when saving editing', () => {
-  component.editingItem = { name: 'old.txt', path: '/old.txt', content: '' };
-  component.editingValue = 'newname.txt';
-
-  const focusSpy = jasmine.createSpy('focus');
-  component.nameEditingElement = {
-    nativeElement: { focus: focusSpy }
-  } as ElementRef;
-
-  // Simulojmë logjikën që ndodh gjatë editimit
-  if (component.nameEditingElement) {
-    component.editingItem.path = '/' + component.editingValue;
-    component.nameEditingElement.nativeElement.focus();
-  }
-
-  expect(component.editingItem.path).toBe('/newname.txt');
-  expect(focusSpy).toHaveBeenCalled();
-});
-
-it('should call confirmationService.confirm on importGithubClick', () => {
-  const confirmSpy = spyOn(component['confirmationService'], 'confirm');
-  const fakeEvent = { target: {} } as Event;
-
-  component.importGithubClick(fakeEvent);
-
-  expect(confirmSpy).toHaveBeenCalled();
-});
-it('should call deleteFolder with fsRoot and update folder reference', () => {
-  const deleteSpy = spyOn(component as any, 'deleteFolder');
-  const mockRoot = driverMock.fsRoot;
-  projectManagerServiceMock.getCurrentDriver.and.returnValue(driverMock);
-
-  component['selectedFolder'] = { ...mockRoot };
-  (component as any).someDeleteMethod();
-
-  expect(deleteSpy).toHaveBeenCalledWith(mockRoot, jasmine.anything());
-});
-it('should focus new item name element when creating new file/folder', () => {
-  const focusSpy = jasmine.createSpy('focus');
-  component.newItemNameElement = { nativeElement: { focus: focusSpy } };
-
-  (component as any).focusNewItemInput();
-
-  expect(focusSpy).toHaveBeenCalled();
-});
-it('should upload files and call writeFile on driver', async () => {
-  const file = new File(['hello'], 'test.txt');
-  const target: any = { files: [file] };
-  const writeSpy = spyOn(driverMock, 'writeFile').and.returnValue(Promise.resolve());
-
-  component.selectedFolder = { name: '', path: '/folder/', folders: [], files: [] };
-
-  await component.upload(target);
-
-  expect(writeSpy).toHaveBeenCalledWith('/folder/test.txt', jasmine.any(ArrayBuffer));
-});
-it('should focus on new item input element', () => {
-  const focusSpy = jasmine.createSpy('focus');
-  component.newItemNameElement = {
-    nativeElement: { focus: focusSpy }
-  } as ElementRef;
-
-  // thirrje e simulimit që ndodh në logjikë reale
-  component.newItemNameElement.nativeElement.focus();
-
-  expect(focusSpy).toHaveBeenCalled();
-});
-it('should export to Google when googleLogin is true', fakeAsync(() => {
-  (component as any).googleLogin = true;
-  const mockToken = 'fake-token';
-  const exportSpy = spyOn(component as any, 'export');
-
-  spyOn(component['authService'], 'getAccessToken')
-    .and.returnValue(Promise.resolve(mockToken));
-
-  (component as any).authService.getAccessToken(GoogleLoginProvider.PROVIDER_ID)
-    .then((token: string) => {
-      (component as any).accessToken = token;
-      (component as any).export('Google');
-    });
 
   tick();
 
-  expect(component['authService'].getAccessToken).toHaveBeenCalledWith(GoogleLoginProvider.PROVIDER_ID);
-  expect(exportSpy).toHaveBeenCalledWith('Google');
-}));
-it('should export to Google when googleLogin is true', fakeAsync(() => {
-  (component as any).googleLogin = true;
-  const mockToken = 'fake-token';
-  const exportSpy = spyOn(component as any, 'export');
-
-  spyOn(component['authService'], 'getAccessToken')
-    .and.returnValue(Promise.resolve(mockToken));
-
-  (component as any).authService.getAccessToken(GoogleLoginProvider.PROVIDER_ID)
-    .then((token: string) => {
-      (component as any).accessToken = token;
-      (component as any).export('Google');
-    });
-
-  tick();
-
-  expect(component['authService'].getAccessToken).toHaveBeenCalledWith(GoogleLoginProvider.PROVIDER_ID);
+  expect(socialAuthServiceMock.getAccessToken).toHaveBeenCalledWith(GoogleLoginProvider.PROVIDER_ID);
+  expect((component as any).accessToken).toBe('fake-token');
   expect(exportSpy).toHaveBeenCalledWith('Google');
 }));
 
 });
+

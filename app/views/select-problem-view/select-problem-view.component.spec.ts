@@ -1,7 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { SelectProblemViewComponent } from './select-problem-view.component';
-import { fakeAsync, tick } from '@angular/core/testing';
 
 describe('SelectProblemViewComponent', () => {
   let component: SelectProblemViewComponent;

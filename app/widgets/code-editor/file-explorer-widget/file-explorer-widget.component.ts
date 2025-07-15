@@ -216,11 +216,14 @@ export class FileExplorerWidgetComponent implements OnInit {
     })
   }
 
-  public selectFolder(folder: FsNodeFolder) {
-    if (this.selectedFolder == folder) {
-      this.selectedFolder == null;
-    }
+public selectFolder(folder: FsNodeFolder) {
+  if (this.selectedFolder === folder) {
+    this.selectedFolder = null;
+  } else {
+    this.selectedFolder = folder;
+    this.onUpdateRoot.emit(folder);  // <--- emetti evento qui
   }
+}
 
   public openSettings() {
     if (!this.showHidden) {
@@ -248,9 +251,11 @@ export class FileExplorerWidgetComponent implements OnInit {
 
 
   public toggleHidden() {
-    this.showHidden = !this.showHidden;
-    this.refreshRoot()
-  }
+  this.showHidden = !this.showHidden;
+  this.showHiddenChanged.emit(this.showHidden);  // aggiungi questa riga
+  this.refreshRoot();
+}
+
 
   public isVisibile(fsitem: FsNodeFile | FsNodeFolder) {
     let isHidden = fsitem.name.startsWith('.');
@@ -274,46 +279,54 @@ export class FileExplorerWidgetComponent implements OnInit {
         this.nameEditingElement.nativeElement.focus();
       }
     }, 0);
-  }
+  }public saveEditing() {
+  if (!this.editingItemError) {
+    if (this.editingItem) {
+      this.editingValue = this.editingValue.trim();
+      if (this.editingValue.length > 0) {
 
-  public saveEditing() {
-    if (!this.editingItemError) {
-      if (this.editingItem) {
-        this.editingValue = this.editingValue.trim();
-        if (this.editingValue.length > 0) {
+        // change name item
+        this.editingItem.name = this.editingValue;
 
-          // change name item
-          this.editingItem.name = this.editingValue;
+        // create new path item
+        const directoryList = this.editingItem.path.split('/');
 
-          // create new path item
-          const directoryList = this.editingItem.path.split('/');
+        if (directoryList.length <= 1) {
+          this.editingItem.path = "/" + this.editingValue;
+        }
 
-          if (directoryList.length <= 1) {
-            this.editingItem.path = "/" + this.editingValue;
-          }
+        const newpath = directoryList
+          .slice(0, -1) // Remove last element ( previous name )
+          .concat(this.editingValue) // Add new name at the end
+          .join('/'); // Rebuild the path
 
-          const newpath = directoryList
-            .slice(0, -1) // Remove last element ( previous name )
-            .concat(this.editingValue) // Add new name at the end
-            .join('/'); // Rebuild the path
+        // Change path item in the FS
+        let driver = this.projectManagerService.getCurrentDriver();
 
-          // Change path item in the FS
-          let driver = this.projectManagerService.getCurrentDriver()
-          driver.renameItem(this.editingItem.path, newpath).then(() => {
+        driver.renameItem(this.editingItem.path, newpath)
+          .then(() => {
             this.refreshRoot();
           })
+          .catch((error) => {
+            // Gestione errore: mostra messaggio di errore
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Rename failed',
+              detail: error?.toString() || 'Unknown error'
+            });
+          });
 
-          this.onItemRenamed.emit({ "oldpath": this.editingItem.path });
+        this.onItemRenamed.emit({ "oldpath": this.editingItem.path });
 
-          // Change path item
-          this.editingItem.path = newpath;
+        // Change path item
+        this.editingItem.path = newpath;
 
-          this.onUpdateRoot?.emit(driver.fsRoot);
-        }
+        this.onUpdateRoot?.emit(driver.fsRoot);
       }
     }
-    this.cancelEditing();
   }
+  this.cancelEditing();
+}
 
   public cancelEditing() {
     this.editingItem = null;

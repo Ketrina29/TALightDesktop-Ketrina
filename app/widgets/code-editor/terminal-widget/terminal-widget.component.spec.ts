@@ -825,17 +825,18 @@ it('should emit syntax error when isPresentArg is unrecognized', () => {
 });
 
 it('should assign selectedService and connectParams in onConnectCommand when problem and service are defined', fakeAsync(() => {
+  // Mocking values
   (component as any).selectedService = { name: '', parent: { name: '' } };
-  (component as any).commandSplit = [
-    'rtal', '-s', 'ws://server', 'connect', '-a', 'lang=py', 'myProblem', 'myService'
-  ];
+  (component as any).commandSplit = ['rtal', '-s', 'ws://server', 'connect', '-a', 'lang=py', 'myProblem', 'myService'];
   spyOn(component.api, 'setUrl').and.returnValue(0);
   spyOn(component, 'runConnectAPI').and.returnValue(Promise.resolve());
-  (component as any).url = 'ws://server';
 
+  // Execute command
   (component as any).onConnectCommand();
-  tick();
 
+  tick();  // Simulate async execution
+
+  // Verify the results
   expect((component as any).selectedService.name).toBe('myService');
   expect((component as any).selectedService.parent.name).toBe('myProblem');
   expect((component as any).connectParams).toEqual({ lang: 'py' });
