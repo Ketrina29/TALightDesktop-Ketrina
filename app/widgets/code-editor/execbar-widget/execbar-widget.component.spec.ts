@@ -13,12 +13,12 @@ describe('ExecbarWidgetComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       declarations: [ ExecbarWidgetComponent ],
-      providers: [ TutorialService ] // nëse nuk është, shtoje
+      providers: [ TutorialService ] 
     }).compileComponents();
 
     fixture = TestBed.createComponent(ExecbarWidgetComponent);
     component = fixture.componentInstance;
-    tutorialService = TestBed.inject(TutorialService); // ✅ kjo shtohet
+    tutorialService = TestBed.inject(TutorialService); 
     fixture.detectChanges();
   });
 
@@ -30,13 +30,13 @@ describe('ExecbarWidgetComponent', () => {
   expect(component).toBeTruthy(); // qualsiasi check, serve solo per trigger
   });
 it('should call ngOnInit explicitly', () => {
-  component.ngOnInit(); // KJO është çfarë mungon
-  expect(true).toBeTrue(); // dummy check për ta bërë test valid
+  component.ngOnInit(); // questo mancava
+  expect(true).toBeTrue(); // dummy check 
 });
 it('should react to tutorialService.onTutorialClose', () => {
-  // e mbulon subscribe për onTutorialClose
+  // covers the subscribe for onTutorialClose
   tutorialService.onTutorialClose.emit();  
-  expect((component as any).isBlurred).toBeFalse(); // sepse isTutorialShown() me undefined -> false
+  expect((component as any).isBlurred).toBeFalse(); // cuz isTutorialShown()  undefined -> false
 });
 
   it('should emit onStop when onStopClick is called', () => {
@@ -86,7 +86,7 @@ it('should react to tutorialService.onTutorialClose', () => {
 });
 it('should react to tutorialService.onTutorialChange', () => {
     const tutorial = { componentName: 'ExecbarWidgetComponent' };
-    tutorialService.onTutorialChange.emit(tutorial); // ✅ tani s’ka më error
+    tutorialService.onTutorialChange.emit(tutorial); // adesso non c'è errore
     expect((component as any).isBlurred).toBeFalse();
   });
 

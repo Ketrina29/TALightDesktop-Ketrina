@@ -48,7 +48,7 @@ describe('AppComponent', () => {
 
     fixture = TestBed.createComponent(AppComponent);
     component = fixture.componentInstance;
-    component.ngOnInit(); // aktivizon subscribet e tutorialService
+    component.ngOnInit(); // activates subscribes and tutorialService
   });
 
   it('should create the app', () => {
@@ -89,7 +89,7 @@ describe('AppComponent', () => {
   const linkElement = document.querySelector('link[rel="preload"][href="https://alcdn.msauth.net/browser/2.13.1/js/msal-browser.min.js"]');
   expect(linkElement).toBeTruthy();
 
-  document.head.removeChild(preloadLink); // pastrimi
+  document.head.removeChild(preloadLink); // cleaning
 });
 
 

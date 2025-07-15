@@ -78,7 +78,7 @@ describe('CodeEditorComponent', () => {
 
 it('should create the component and call enableStdin', () => {
   component.outputWidget = outputWidgetSpy;
-  component.ngAfterViewInit(); // Siguron që thirret metoda që e aktivizon
+  component.ngAfterViewInit(); 
   expect(component).toBeTruthy();
   expect(outputWidgetSpy.enableStdin).toHaveBeenCalledWith(false);
 });
@@ -93,31 +93,26 @@ it('should create the component and call enableStdin', () => {
   });
 
  it('should send stdin lines and disable input after sendStdin', async () => {
-  // Vendosim state-in në Ready për të lejuar dërgimin e stdin
+ 
   component.pyodideState = CompilerState.Ready;
 
-  // Sigurohemi që outputWidget është i disponueshëm
   component.outputWidget = outputWidgetSpy;
 
-  // Stub print për të shmangur gabimet runtime në expect
   outputWidgetSpy.print.and.stub();
   outputWidgetSpy.enableStdin.and.stub();
 
-  // Simulo input-in për stdin
   const input = 'line1\nline2\n';
 
-  // Ekzekuto metoden
   await component.sendStdin(input, false);
 
-  // Verifikojmë që linjat janë dërguar te ProjectDriver
+
   expect(mockProjectDriver.sendStdin).toHaveBeenCalledWith('line1');
   expect(mockProjectDriver.sendStdin).toHaveBeenCalledWith('line2');
 
-  // Verifikojmë që janë printuar me tipin e duhur
+
   expect(outputWidgetSpy.print).toHaveBeenCalledWith('line1', OutputType.STDIN);
   expect(outputWidgetSpy.print).toHaveBeenCalledWith('line2', OutputType.STDIN);
 
-  // Kontrollojmë që input-i është çaktivizuar
   expect(outputWidgetSpy.enableStdin).toHaveBeenCalledWith(false);
 });
 
@@ -125,7 +120,7 @@ it('should create the component and call enableStdin', () => {
   it('should send stdin from API and call print with OutputType.STDINAPI', async () => {
   component.outputWidget = outputWidgetSpy;
   
-  await component.sendStdin('apiLine1\napiLine2', true); // <-- `await` shtuar
+  await component.sendStdin('apiLine1\napiLine2', true); // <-- `await` 
   
   expect(outputWidgetSpy.print).toHaveBeenCalledWith('apiLine1', OutputType.STDINAPI);
   expect(outputWidgetSpy.print).toHaveBeenCalledWith('apiLine2', OutputType.STDINAPI);
@@ -163,7 +158,7 @@ it('should create the component and call enableStdin', () => {
   });
   
   it('should handle onAttachments correctly and call refreshRoot', async () => {
-  // Mock për window.Tar.unpack
+  // Mock for window.Tar.unpack
   const unpackSpy = jasmine.createSpy('unpack').and.returnValue([
     {
       name: 'file1.py',
@@ -173,7 +168,7 @@ it('should create the component and call enableStdin', () => {
   ]);
   (window as any).Tar = { unpack: unpackSpy };
 
-  // Mock për fileExplorer dhe selectedProblem
+  // Mock for fileExplorer and selectedProblem
   (component as any).fileExplorer = {
     refreshRoot: jasmine.createSpy('refreshRoot')
   };
@@ -182,7 +177,6 @@ it('should create the component and call enableStdin', () => {
 
   await (component as any).onAttachments(new ArrayBuffer(8), 'problemWidget');
 
-  // Verifikimet
 expect(mockProjectDriver.writeFile).toHaveBeenCalledWith(
   '/data/folder1/file1.py',
   jasmine.any(ArrayBuffer)

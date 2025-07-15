@@ -1,8 +1,8 @@
 import { ComponentFixture, fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { LogApiWidgetComponent } from './log-api-widget.component';
 
-import { ButtonModule } from 'primeng/button'; // Importo modul për p-button
-import { CUSTOM_ELEMENTS_SCHEMA, EventEmitter } from '@angular/core'; // Për të toleruar pjesë të tjera që s’i importon tani
+import { ButtonModule } from 'primeng/button'; // Importo modul per p-button
+import { CUSTOM_ELEMENTS_SCHEMA, EventEmitter } from '@angular/core'; 
 
 describe('LogApiWidgetComponent', () => {
   let component: LogApiWidgetComponent;
@@ -11,8 +11,8 @@ describe('LogApiWidgetComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       declarations: [LogApiWidgetComponent],
-      imports: [ButtonModule], // shto këtu modulet që template përdor
-      schemas: [CUSTOM_ELEMENTS_SCHEMA] // opsionale, për të evituar NG0304 për komponente të tjera të PrimeNG
+      imports: [ButtonModule], // add modules that template uses
+      schemas: [CUSTOM_ELEMENTS_SCHEMA] // opsional
     }).compileComponents();
 
     fixture = TestBed.createComponent(LogApiWidgetComponent);

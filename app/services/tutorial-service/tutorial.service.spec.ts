@@ -132,12 +132,12 @@ describe('TutorialService', () => {
   const spyTutorial = jasmine.createSpy();
   service.onTutorialChange.subscribe(spyTutorial);
 
-  service.nextTutorial(999); // tejkalon listën
+  service.nextTutorial(999); // passing the list
   expect(spyTutorial).not.toHaveBeenCalled();
 });
 it('should close tutorial if nextTutorial is called with index out of bounds', () => {
   spyOn(service, 'closeTutorial');
-  service.nextTutorial(99); // tejkalon
+  service.nextTutorial(99); // passing
   expect(service.closeTutorial).toHaveBeenCalled();
 });
 

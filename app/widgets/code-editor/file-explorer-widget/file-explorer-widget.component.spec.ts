@@ -592,7 +592,7 @@ it('should not call selectFile if configFile is not found in openSettings', () =
     name: 'settings',
     path: '/settings',
     folders: [],
-    files: []  // configFile mungon
+    files: []  // configFile missin
   };
 
   driverMock.fsRoot.folders = [fakeFolder];
@@ -1055,13 +1055,13 @@ it('should trigger file download using anchor tag', () => {
 });
 
 it('should replace project after scanning and deleting', fakeAsync(() => {
-  component.driver = driverMock; // cakto mock-un
+  component.driver = driverMock; // make the mock
   const deleteSpy = spyOn(component as any, 'deleteFolder');
   const refreshSpy = spyOn(component as any, 'refreshRoot');
   const importSpy = spyOn(component as any, 'importProject');
 
   component.replaceProject(new ArrayBuffer(8));
-  tick(); // nevojitet për të përfunduar zinxhirin e .then()
+  tick(); // need for the .then()
 
   expect(driverMock.scanDirectory).toHaveBeenCalledWith('/');
   expect(deleteSpy).toHaveBeenCalled();
@@ -1072,7 +1072,7 @@ it('should click fileUpload input when clicking "Import from local"', () => {
   const event = { originalEvent: new Event('click') };
   const closeMenuSpy = spyOn(component, 'closeAllContextMenus');
 
-  // Simulo një element fileUpload në DOM
+  // Simulate fileUpload in DOM
   const clickSpy = jasmine.createSpy('click');
   const mockInput = document.createElement('input');
   mockInput.setAttribute('id', 'fileUpload');
@@ -1128,7 +1128,7 @@ it('should update editingItem path and focus input when saving editing', () => {
     nativeElement: { focus: focusSpy }
   } as ElementRef;
 
-  // Simulojmë logjikën që ndodh gjatë editimit
+  // Simulate the logic
   if (component.nameEditingElement) {
     component.editingItem.path = '/' + component.editingValue;
     component.nameEditingElement.nativeElement.focus();
@@ -1516,7 +1516,7 @@ it('should get access token and upload file when repo not found', fakeAsync(() =
   (component as any).mime = 'text/plain';
 
   component.checkGithubCallback(popup, 'Github-archive');
-  tick(1000); // për intervalin
+  tick(1000); // for the intervallo 
 
   expect(component['githubService'].getAccessToken).toHaveBeenCalledWith('1234');
   expect(component['githubService'].createRepository).toHaveBeenCalledWith('TALightProject-Archives');
@@ -1589,11 +1589,11 @@ it('should upload file to Google Drive and show success message', async () => {
   } as Response);
 
   const successResponse = {
-    json: async () => ({})  // pa `error` -> suksesi
+    json: async () => ({})  // no `error` -> success
   };
 
   spyOn(component, 'showToastMessage');
-  spyOn(window, 'Blob').and.callThrough(); // siguro që të mos ngatërrohet
+  spyOn(window, 'Blob').and.callThrough(); // questo è sicuro per non confonderci
 
   spyOn(component as any, 'uploadGoogleDrive').and.callThrough();
 

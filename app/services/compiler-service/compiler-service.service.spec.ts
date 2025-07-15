@@ -15,8 +15,8 @@ describe('CompilerService', () => {
     expect(service).toBeTruthy();
   });
   it('should throw error if driver is not found for a given language', () => {
-    const invalidLang = 'JS' as ProjectLanguage; // ose çdo string që nuk është 'PY'
-    spyOn(console, 'error'); // për të mbuluar console.error
+    const invalidLang = 'JS' as ProjectLanguage; // every string that is not 'PY'
+    spyOn(console, 'error'); // to cover console.error
 
     expect(() => service.get(invalidLang)).toThrowError('Driver not found');
     expect(console.error).toHaveBeenCalledWith('CompilerService:getDriver:driver_not_found:', invalidLang);

@@ -14,13 +14,13 @@ describe('TALightSocket', () => {
       { closed: false }
     );
 
-    // Kjo është çelësi që TALightSocket të mos krijojë websocket real
+    // the key that TALightSocket to not create websocket real
    spyOn(WebSocketFactory, 'createWebSocket').and.returnValue(mockWebSocket);
   });
   it('should create websocket and be open', () => {
     const socket = new TALightSocket('ws://testserver');
     expect(WebSocketFactory.createWebSocket).toHaveBeenCalled();
-    expect(socket.isOpen()).toBeTrue(); // sepse mockWebSocket.closed = false
+    expect(socket.isOpen()).toBeTrue(); // because mockWebSocket.closed = false
   });
   it('should send packet when socket is open', () => {
     const socket = new TALightSocket('ws://testserver');
@@ -46,7 +46,7 @@ it('should return false and call onError if socket is closed in sendBinary()', (
 });
 
 it('should call onError and return false when send() fails due to closed ws', () => {
-  // 👇 vendose mbylljen përpara krijimit
+
   Object.defineProperty(mockWebSocket, 'closed', { value: true });
   const socket = new TALightSocket('ws://mock');
   
@@ -82,7 +82,7 @@ it('should call onError when didRecieve receives invalid JSON string', () => {
 
   expect(errorSpy).toHaveBeenCalled();
   const message = errorSpy.calls.mostRecent().args[0];
-  expect(message).toContain('Invalid JSON'); // ose 'SyntaxError'
+  expect(message).toContain('Invalid JSON'); // or 'SyntaxError'
 });
 
 
@@ -206,7 +206,7 @@ describe('Packets.Request.ConnectStop', () => {
   });
 });
 
-// Testimi për klasat Reply
+// Tests for Reply class
 
 describe('Packets.Reply.Attachment', () => {
   it('should initialize with default status', () => {

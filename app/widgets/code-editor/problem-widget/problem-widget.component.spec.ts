@@ -433,18 +433,17 @@ it('fileDidChange sets dropdown color to green if path exists', async () => {
   // ✅ event duhet të ketë originalEvent dhe value
   const event = { originalEvent: new Event('change'), value: '/invalid/path' };
 
-  // ✅ dropdown fals për DOM
+  // ✅ dropdown false for DOM
   const dropdown = document.createElement('div');
   dropdown.style.color = '';
 
-  // ✅ driver mock me exists që kthen false
   const driverMock = {
     exists: jasmine.createSpy().and.resolveTo(false)
   } as unknown as ProjectDriver;
 
-  // ✅ mock për DOM
+  // ✅ mock for DOM
   spyOn(document, 'getElementById').and.returnValue(dropdown);
-  // ✅ mock për driver
+  // ✅ mock for driver
   spyOn(component.pms, 'getCurrentDriver').and.returnValue(driverMock);
 
   await component.fileDidChange(file, event);
@@ -591,7 +590,7 @@ it('should select service and emit with args and files', async () => {
   const service = { name: 'test', args: {}, files: {} } as ServiceDescriptor;
   component.selectedService = service;
 
-  spyOn(component.onServiceSelected, 'emit'); // vetëm kjo nevojitet
+  spyOn(component.onServiceSelected, 'emit'); 
 
   await component.didSelectService();
 
@@ -743,7 +742,7 @@ it('should populate problemsMenu when clear is false', async () => {
   await component.problemsDidChange(false);
 
   expect(component.problemsMenu.length).toBe(2);
-  expect(component.problemsMenu[0].name).toBe('Alpha'); // kontrollon sort
+  expect(component.problemsMenu[0].name).toBe('Alpha'); // checks sort
   expect(component.loading).toBeFalse();
   expect(emitSpy).toHaveBeenCalled();
 });

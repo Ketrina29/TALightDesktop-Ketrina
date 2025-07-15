@@ -10,7 +10,7 @@ describe('AuthGuard', () => {
   let mockConnectionState: boolean;
 
   beforeEach(() => {
-    mockConnectionState = true; // vlera default
+    mockConnectionState = true; //  default value
 
     const connSpy = jasmine.createSpyObj('ConnectionManagerService', [], {
       get isConnected() {

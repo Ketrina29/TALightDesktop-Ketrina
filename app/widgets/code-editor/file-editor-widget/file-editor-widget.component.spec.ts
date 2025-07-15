@@ -178,24 +178,24 @@ it('should return a match for file with unknown extension (fallback)', () => {
   const file: FsNodeFile = { name: 'file.unknown', path: '/file.unknown', content: 'data' } as FsNodeFile;
   const match = component.fileAssocList.match(file);
 
-  expect(match?.editorType).toBe(EditorType.Browser); // fallback është editori "Browser"
+  expect(match?.editorType).toBe(EditorType.Browser); // fallback is the editor "Browser"
 });
 it('should update isBlurred based on tutorial state', () => {
   (component as any).isTutorialShown({ componentName: component.constructor.name });
-  expect((component as any).isBlurred).toBeFalse(); // tutorial aktiv
+  expect((component as any).isBlurred).toBeFalse(); // tutorial activ
 
   (component as any).isTutorialShown({ componentName: 'SomeOtherComponent' });
-  expect((component as any).isBlurred).toBeTrue(); // tutorial joaktiv
+  expect((component as any).isBlurred).toBeTrue(); // tutorial not activ
 });
 
 it('should fallback to default language if extension is unknown', () => {
   const file = { name: 'nofile.unknown', content: '??' } as FsNodeFile;
   const match = component.fileAssocList.match(file);
   
-  expect(match).toBeTruthy(); // ose null, në varësi të listës
+  expect(match).toBeTruthy(); // or nul it depends on the list
 
   if (!match) {
-    expect('plaintext').toBe('plaintext'); // fallback (në vend të thirrjes joekzistente)
+    expect('plaintext').toBe('plaintext'); // fallback 
   }
 });
 

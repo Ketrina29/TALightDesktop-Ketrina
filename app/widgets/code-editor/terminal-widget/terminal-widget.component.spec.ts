@@ -279,7 +279,7 @@ it('didConnectData should write file and emit response when output_files present
     getCurrentDriver: () => driverMock
   };
 
-  // Skenari: ka një file për të shkruar
+  // Scenario quando hai 1 file da importare
   (component as any).output_files = ['file1'];
   (component as any).current_output_file = 'file1';
 
@@ -614,8 +614,8 @@ it('apiDownloadAttachment should handle GetAttachment onError callback', fakeAsy
 
   (component as any).problemSearch = 'testProblem';
 
-  component.apiDownloadAttachment(); // nuk ka më `await`
-  tick(); // përpunon onError async nëse ka nevojë
+  component.apiDownloadAttachment(); // no `await`
+  tick(); // it gets onError async if needed
 
   expect(component.response).toContain('ERROR');
   expect(component.response).toContain('Download failed');
@@ -682,11 +682,10 @@ it('should call sendBinary on cmdConnect and clear response', () => {
 });
 
 it('should call apiDownloadAttachment and emit onProblemSelected in onGetCommand', () => {
-  // Mockojmë apiDownloadAttachment
+  // Mock apiDownloadAttachment
   const apiDownloadSpy = spyOn(component, 'apiDownloadAttachment');
   const emitSpy = spyOn(component.onProblemSelected, 'emit');
 
-  // Vendosim disa vlera të nevojshme
   (component as any).problemSearch = 'dummy-problem';
 
   component.onGetCommand();
@@ -719,7 +718,7 @@ it('should handle "--server-url list" command properly', () => {
 
   const getListSpy = spyOn<any>(component, 'getListProblems');
 
-  // Dërgo komandën përmes Subject-it të simuluar
+ 
   commandHandlerSubject.next(command);
 
   expect(getListSpy).toHaveBeenCalledWith(mockUrl);
@@ -888,7 +887,7 @@ it('should call api.Connect with correct parameters when selectedService is defi
 
   component.selectedService = mockService as any;
 
-  // Anashkalim i fushave private me Object.assign
+  // byepass private fields with Object.assign
   Object.assign(component, {
     connectParams: { key: 'value' },
     pms: {
@@ -932,7 +931,7 @@ it('should call api.Connect with correct parameters when selectedService is defi
     jasmine.any(Function),
   );
 
-  // Kontroll që cmdConnect të jetë inicializuar
+  // check if the cmdConnect è inizializzato
   expect((component as any).cmdConnect).toBeDefined();
 }));
 describe('onListCommand', () => {
@@ -1010,7 +1009,7 @@ it('should call all callbacks passed to api.Connect', fakeAsync(async () => {
   };
 
   component.selectedService = mockService as any;
-  (component as any).connectParams = {};  // nëse private
+  (component as any).connectParams = {};  // if private
   (component as any).pms = {
     getCurrentProject: () => ({
       config: {

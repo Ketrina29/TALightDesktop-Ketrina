@@ -226,16 +226,16 @@ describe('Packets.Reply.MetaList', () => {
 describe('Packets.Reply.Result', () => {
 it('should handle Result with Ok', () => {
   const result = new Packets.Reply.Result({ Ok: ['done'] });
-expect(result.Ok).toEqual(['done']);            // ✅
-expect(result.Err).toBeNull();                  // ✅
-expect(result.success()).toBeTrue()     // dështoi: ishte false
+expect(result.Ok).toEqual(['done']);            
+expect(result.Err).toBeNull();                
+expect(result.success()).toBeTrue()     
 });
 
 
   it('should handle Result with Err', () => {
     const result = new Packets.Reply.Result({ Err: 'fail' });
-expect(result.Err).toBe('fail');                // ✅
-expect(result.Ok).toBeNull();                   // ✅
+expect(result.Err).toBe('fail');            
+expect(result.Ok).toBeNull();                  
 expect(result.success()).toBeFalse();  
   });
 

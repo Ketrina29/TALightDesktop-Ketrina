@@ -14,7 +14,7 @@ describe('ThemeService', () => {
 
     mockDocument = document;
 
-    // Pastro localStorage
+    // clean localStorage
     localStorage.clear();
 
     service = new ThemeService(mockDocument);

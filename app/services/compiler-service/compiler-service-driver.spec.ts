@@ -515,7 +515,7 @@ it('should convert Uint8Array to string in dataToString', () => {
   const driver = new CompilerDriver(worker);
 
   const encoder = new TextEncoder();
-  const uint8 = encoder.encode('hello'); // kjo është ajo që pret realisht dataToString
+  const uint8 = encoder.encode('hello'); //  dataToString wants this
 
   const result = (driver as any).dataToString(uint8);
   expect(result).toBe('hello');
@@ -545,7 +545,7 @@ it('should ignore unknown message type in didRecieve()', () => {
   };
 
   expect(() => (driver as any).didRecieve(response)).not.toThrow();
-  // s'ka nevojë për më shumë: thjesht sigurohemi që nuk rrëzohet (crash)
+ 
 });
 
 
@@ -572,7 +572,7 @@ it('should resolve to null for unknown message type in sendMessage()', async () 
     errors: []
   };
 
-  // Simulojmë marrjen e përgjigjes
+  // Simulate get a response
   (driver as any).didRecieve(fakeResponse);
 
   const result = await promise;

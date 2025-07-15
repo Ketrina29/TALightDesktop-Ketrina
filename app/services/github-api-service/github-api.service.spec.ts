@@ -69,14 +69,14 @@ it('should fetch repo list from getRepoList()', async () => {
   expect(result).toEqual(mockResponse);
 });
 it('should fetch repo list using username from localStorage', async () => {
-  // Simulo localStorage
+  // Simulate localStorage
   spyOn(localStorage, 'getItem').and.callFake((key) => {
     if (key === 'username') return 'testuser';
     if (key === 'accessToken') return 'token123';
     return null;
   });
 
-  // Mocko përgjigjen e fetch
+  // Mock the response of fetch
   const fakeResponse = [{ name: 'repo1' }, { name: 'repo2' }];
   spyOn(window, 'fetch').and.resolveTo({
     json: async () => fakeResponse

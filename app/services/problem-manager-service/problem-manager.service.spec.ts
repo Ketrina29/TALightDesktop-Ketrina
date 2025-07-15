@@ -12,7 +12,7 @@ import { fakeAsync, tick } from '@angular/core/testing';
 
 class MockProblemList extends Commands.ProblemList {
   constructor() {
-    super('ws://mock'); // url mund të jetë një placeholder
+    super('ws://mock'); // url could be a placeholder
 
     this.onError = () => {};
     this.onClose = () => {};
@@ -51,7 +51,7 @@ describe('ProblemManagerService', () => {
   });
 
  it('should emit selected problem and update config', () => {
-  // përgatisim projektin
+ 
   const currentProject = projectMock.getCurrentProject();
   currentProject.config.TAL_PROBLEM = '';
   currentProject.config.TAL_SERVICE = '';

@@ -83,7 +83,7 @@ it('should call onAttachment in GetAttachment()', () => {
   const spy = jasmine.createSpy('onAttachment');
   const result = service.GetAttachment('problem1', spy);
 
-  // ✅ Objekt mock i tipit Attachment
+  // ✅ Oggeto mock tipo Attachment
   const mockAttachment: any = {
     status: 'ok',
     messageName: 'Attachment',
@@ -92,7 +92,7 @@ it('should call onAttachment in GetAttachment()', () => {
     fromPacket: () => {}
   };
 
-  // ✅ FIX për TS2345
+  // ✅ FIX for TS2345
   result.onReciveAttachment?.(mockAttachment);
 
   expect(spy).toHaveBeenCalledWith(mockAttachment);
@@ -123,7 +123,6 @@ it('should call onConnectBegin in Connect()', () => {
   const spy = jasmine.createSpy('onConnectBegin');
   const result = service.Connect('p1', 's1', {}, false, 'token', undefined, spy);
 
-  // ✅ Objekt mock i tipit ConnectBegin
   const mockConnectBegin: any = {
     status: 'connected',
     messageName: 'ConnectBegin',
@@ -172,7 +171,7 @@ spyOn<any>(service, 'problemList').and.callFake(function (
 });
 
 it('should call onResult when problemList receives problem list', () => {
-  // Simulo një objekt MetaList
+
   const fakeMetaList = {
     meta: new Map<string, Meta>(),
     messageName: () => 'MetaList',
@@ -181,10 +180,8 @@ it('should call onResult when problemList receives problem list', () => {
     fromPacket: jasmine.createSpy('fromPacket')
   };
 
-  // Krijo spiun për callback
   const onResultSpy = jasmine.createSpy('onResult');
 
-  // Spy mbi problemList dhe simulo sjelljen
   spyOn<any>(service, 'problemList').and.callFake(function (
     onResult: (meta: Map<string, Meta>) => void,
     onError?: (error: string) => void
@@ -199,19 +196,15 @@ it('should call onResult when problemList receives problem list', () => {
       run: jasmine.createSpy('run')
     };
 
-    // Sigurohu që metoda run të thirret si zakonisht
     mockCmd.run();
 
     return mockCmd;
   });
 
-  // Thirr funksionin me spiun
   const cmd = service.problemList(onResultSpy);
 
-  // Simulo marrjen e një mesazhi MetaList
   cmd.onRecieveProblemList!(fakeMetaList);
 
-  // Kontrollo që gjithçka është thirrur siç duhet
   expect(onResultSpy).toHaveBeenCalledWith(fakeMetaList.meta);
   expect(cmd.run).toHaveBeenCalled();
 });

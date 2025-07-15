@@ -46,21 +46,21 @@ describe('ApiService', () => {
       projectManagerServiceMock.getCurrentProject.and.returnValue(mockProject);
     });
 
-    it('dovrebbe accettare URL ws valido e aggiornare config', () => {
+    it('should accept valid ws URL and update config', () => {
       // NO spyOn here, it's already done in beforeEach of this describe block
       const result = service.setUrl('ws://myserver.local:8080/');
       expect(result).toBeTrue();
       expect(mockProject.config.TAL_SERVER).toBe('ws://myserver.local:8080/');
     });
 
-    it('dovrebbe accettare URL wss valido e aggiornare config', () => {
+    it('should accept valid wss URL and update config', () => {
       // NO spyOn here
       const result = service.setUrl('wss://example.com/socket');
       expect(result).toBeTrue();
       expect(mockProject.config.TAL_SERVER).toBe('wss://example.com/socket');
     });
 
-    it('dovrebbe accettare URL con slash finale', () => {
+    it('should accept URL with trailing slash', () => {
       // NO spyOn here
       const result = service.setUrl('ws://localhost:3000/');
       expect(result).toBeTrue();
@@ -69,21 +69,23 @@ describe('ApiService', () => {
   });
 
 
-  it('dovrebbe essere creato correttamente', () => {
+  it('should be created correctly', () => {
     expect(service).toBeTruthy();
   });
-it('dovrebbe restituire stringa vuota se getCurrentProject non restituisce config', () => {
+
+it('should return empty string if getCurrentProject does not return config', () => {
     
     projectManagerServiceMock.getCurrentProject.and.returnValue({}); // Override for this specific test
     const url = service.getCurrentServerUrl();
     expect(url).toBe('');
   });
-  it('dovrebbe restituire l\'URL corrente del server', () => {
+
+  it('should return the current server URL', () => {
     const url = service.getCurrentServerUrl();
     expect(url).toBe('wss://mock.server.com');
   });
 
-  it('dovrebbe chiamare onResult quando problemList ha successo', () => {
+  it('should call onResult when problemList succeeds', () => {
     const mockMetaMap = new Map<string, any>([['problema1', {}]]);
     let mockCmd: any = {
       onRecieveProblemList: undefined,
@@ -100,7 +102,8 @@ it('dovrebbe restituire stringa vuota se getCurrentProject non restituisce confi
     service.problemList(onResultSpy);
     expect(onResultSpy).toHaveBeenCalledWith(mockMetaMap);
   });
-it('dovrebbe inviare il messaggio se ws è aperto', () => {
+
+it('should send message if ws is open', () => {
   const mockSocket = {
     readyState: 1, // OPEN
     send: jasmine.createSpy('send')
@@ -112,13 +115,14 @@ it('dovrebbe inviare il messaggio se ws è aperto', () => {
 
   expect(mockSocket.send).toHaveBeenCalledWith(JSON.stringify(msg));
 });
-it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
+
+it('should return empty string if getCurrentProject is undefined', () => {
   projectManagerServiceMock.getCurrentProject.and.returnValue(undefined);
   const url = service.getCurrentServerUrl();
   expect(url).toBe('');
 });
 
-  it('dovrebbe chiamare onError quando problemList fallisce', () => {
+  it('should call onError when problemList fails', () => {
     let mockCmd: any = {
       onRecieveProblemList: undefined,
       onError: undefined,
@@ -135,7 +139,8 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
     expect(onErrorSpy).toHaveBeenCalledWith("errore di connessione");
   });
 
-  it('dovrebbe gestire correttamente GetAttachment con successo', () => {
+
+  it('should handle GetAttachment successfully', () => {
     const mockBinaryHeader = { name: "file.txt", size: "1024", hash: "1234" };
     const mockData = new ArrayBuffer(10);
 
@@ -170,7 +175,7 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
     expect(onData).toHaveBeenCalledWith(mockData);
   });
 
-  it('dovrebbe gestire correttamente GetAttachment in caso di errore', () => {
+  it('should handle GetAttachment with error', () => {
     let mockCmd: any = {
       onReciveAttachment: undefined,
       onReciveAttachmentInfo: undefined,
@@ -191,7 +196,7 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
     expect(onError).toHaveBeenCalledWith("Failed to receive attachment: ");
   });
 
-  it('non dovrebbe lanciare errore se onError è assente ma il messaggio è errato', () => {
+  it('should not throw error if onError is missing but message is erroneous', () => {
     let mockCmd: any = {
       onReciveAttachment: undefined,
       onReciveAttachmentInfo: undefined,
@@ -210,7 +215,7 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
     expect(true).toBeTrue(); // test superato se non ci sono eccezioni
   });
 
-  it('dovrebbe gestire correttamente Connect con successo', () => {
+  it('should handle Connect successfully', () => {
     const mockHeader = { name: "data.txt", size: "2048", hash: "abcd" };
     const mockMessageData = "risposta dal server";
     const mockOkList = ["avvio completato"];
@@ -260,14 +265,12 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
     expect(onBinaryHeader).toHaveBeenCalledWith(mockHeader);
   });
 
-  it('dovrebbe gestire correttamente Connect in caso di errore', () => {
+  it('should handle Connect with error', () => {
     // Mock del comando Connect.
     // We define properties that ApiService will assign *to*, and a 'run' method
     // that simulates the backend sending error messages.
     let mockCmd: any = {
-      // These properties should be `undefined` initially. ApiService will assign
-      // its own callback functions (which will then call the 'onError' spy from our test)
-      // to these properties.
+      // These properties should be `undefined` initially. 
       onReciveConnectBegin: undefined,
       onReciveConnectStart: undefined,
       onReciveConnectStop: undefined,
@@ -316,8 +319,6 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
     // Force the run() method on our mockCmd to trigger the simulated backend responses.
     mockCmd.run();
 
-    // Now, these expectations should pass because ApiService's handlers for
-    // onReciveConnectBegin, onReciveConnectStart, and onReciveConnectStop
     // will detect the error status and correctly call the 'onError' spy.
     expect(onError).toHaveBeenCalledWith("Failed to begin connection: errore");
     expect(onError).toHaveBeenCalledWith("Failed to start connect: errore");
@@ -327,7 +328,7 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
 
 
 
-  it('dovrebbe aggiornare lo stato solo se cambia', () => {
+  it('should update state only if it changes', () => {
     const spy = jasmine.createSpy('onApiStateChange');
     service.onApiStateChange.subscribe(spy);
 
@@ -340,28 +341,28 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
     expect(spy).toHaveBeenCalledWith(ApiState.Good);
   });
 
-  it('dovrebbe passare a stato Maybe', () => {
+  it('should transition to Maybe state', () => {
     const spy = jasmine.createSpy('onApiStateChange');
     service.onApiStateChange.subscribe(spy);
     service.stateMaybe();
     expect(spy).toHaveBeenCalledWith(ApiState.Maybe);
   });
 
-  it('dovrebbe passare a stato Good', () => {
+  it('should transition to Good state', () => {
     const spy = jasmine.createSpy('onApiStateChange');
     service.onApiStateChange.subscribe(spy);
     service.stateGood();
     expect(spy).toHaveBeenCalledWith(ApiState.Good);
   });
 
-  it('dovrebbe passare a stato Bad', () => {
+  it('should transition to Bad state', () => {
     const spy = jasmine.createSpy('onApiStateChange');
     service.onApiStateChange.subscribe(spy);
     service.stateBad();
     expect(spy).toHaveBeenCalledWith(ApiState.Bad);
   });
 
-  it('dovrebbe passare a stato Idle', () => {
+  it('should transition to Idle state', () => {
     // Prima cambia stato per poi tornare a Idle
     service.updateState(ApiState.Bad);
 
@@ -371,34 +372,34 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
     expect(spy).toHaveBeenCalledWith(ApiState.Idle);
   });
 
-  it('dovrebbe rifiutare una URL non valida', () => {
+  it('should reject an invalid URL', () => {
     const result = service.setUrl("questa-non-è-url");
     expect(result).toBeFalse();
   });
 
-  it('dovrebbe rifiutare URL con protocollo non ws/wss', () => {
+  it('should reject URL with non-ws/wss protocol', () => {
     const result = service.setUrl("http://esempio.com");
     expect(result).toBeFalse();
   });
 
-  it('copertura diretta per setUrl con tutti i rami', () => {
+  it('should cover all setUrl branches', () => {
     expect(service.setUrl("non-url")).toBeFalse();                         // catch block
     expect(service.setUrl("http://esempio.com")).toBeFalse();             // invalid protocol
     expect(service.setUrl("ws://valido.com")).toBeTrue();                 // valid ws
     expect(service.setUrl("wss://valido.com")).toBeTrue();                // valid wss
   });
 
-  it('non dovrebbe emettere se lo stato non cambia', () => {
-    service.updateState(ApiState.Maybe); // ndryshojmë fillimisht
+  it('should not emit if state does not change', () => {
+    service.updateState(ApiState.Maybe); // cambio in the start
     const spy = jasmine.createSpy('onApiStateChange');
     service.onApiStateChange.subscribe(spy);
 
-    service.updateState(ApiState.Maybe); // thirrim të njëjtin prapë
+    service.updateState(ApiState.Maybe); // call the same again
 
-    expect(spy).not.toHaveBeenCalled(); // nuk duhet të emetojë dy herë
+    expect(spy).not.toHaveBeenCalled(); // not emit second time
   });
 
-    it('dovrebbe gestire un errore quando new URL fallisce in setUrl', () => {
+    it('should handle error when new URL fails in setUrl', () => {
     const originalURL = window.URL;
     spyOn(window as any, 'URL').and.callFake(() => { throw new Error('Invalid URL'); });
     const result = service.setUrl("%%%");
@@ -406,13 +407,13 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
     window.URL = originalURL;
   });
 
-  it('dovrebbe restituire stringa vuota se getCurrentProject non restituisce config', () => {
+  it('should return empty string if getCurrentProject does not return config', () => {
     projectManagerServiceMock.getCurrentProject.and.returnValue({});
     const url = service.getCurrentServerUrl();
     expect(url).toBe('');
   });
 
-  it('dovrebbe emettere eventi per ogni cambiamento di stato valido', () => {
+  it('should emit events for every valid state change', () => {
     const spy = jasmine.createSpy('onApiStateChange');
     service.onApiStateChange.subscribe(spy);
 
@@ -426,7 +427,7 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
     expect(spy).toHaveBeenCalledWith(ApiState.Bad);
   });
 
-  it('dovrebbe gestire Connect error senza onError definito', () => {
+  it('should handle Connect error without onError defined', () => {
     let mockCmd: any = {
       onReciveConnectBegin: undefined,
       onReciveConnectStart: undefined,
@@ -445,7 +446,7 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
     expect(true).toBeTrue(); // passa se nessuna eccezione
   });
 
-  it('dovrebbe eseguire GetAttachment senza callback definiti', () => {
+  it('should run GetAttachment without defined callbacks', () => {
     let mockCmd: any = {
       onReciveAttachment: undefined,
       onReciveAttachmentInfo: undefined,
@@ -464,7 +465,7 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
     expect(true).toBeTrue(); // passa se non fallisce
   });
 
-  it('dovrebbe chiamare solo i callback forniti durante Connect', () => {
+  it('should call only provided callbacks during Connect', () => {
     let mockCmd: any = {
       onReciveConnectBegin: undefined,
       run: function () {
@@ -480,7 +481,9 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
 
     expect(onConnectBegin).toHaveBeenCalledWith(["ok"]);
   });
-    it('non dovrebbe inviare messaggi se ws è undefined', () => {
+
+
+    it('should not send messages if ws is undefined', () => {
     (service as any).ws = undefined;
 
     expect(() => {
@@ -488,7 +491,7 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
     }).not.toThrow();
   });
 
-  it('non dovrebbe inviare messaggi se ws non è in stato OPEN', () => {
+  it('should not send messages if ws is not in OPEN state', () => {
     const mockSocket = {
       readyState: 0, // CONNECTING
       send: jasmine.createSpy('send')
@@ -501,7 +504,7 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
     expect(mockSocket.send).not.toHaveBeenCalled();
   });
 
-  it('non dovrebbe lanciare errori se ws è undefined durante disconnect', () => {
+  it('should not throw error if ws is undefined during disconnect', () => {
     (service as any).ws = undefined;
 
     expect(() => {
@@ -509,7 +512,7 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
     }).not.toThrow();
   });
 
-  it('non dovrebbe chiudere ws se non è in stato OPEN', () => {
+  it('should not close ws if not in OPEN state', () => {
     const mockSocket = {
       readyState: 3, // CLOSED
       close: jasmine.createSpy('close')
@@ -521,7 +524,7 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
 
     expect(mockSocket.close).not.toHaveBeenCalled();
   });
-  it('dovrebbe gestire problemList anche senza onResult', () => {
+  it('should handle problemList even without onResult', () => {
     let mockCmd: any = {
       onRecieveProblemList: undefined,
       onError: undefined,
@@ -539,7 +542,7 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
     }).not.toThrow();
   });
 
-  it('dovrebbe gestire problemList error anche senza onError', () => {
+  it('should handle problemList error even without onError', () => {
     let mockCmd: any = {
       onRecieveProblemList: undefined,
       onError: undefined,
@@ -557,7 +560,7 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
     }).not.toThrow();
   });
 
-  it('dovrebbe ignorare messaggio attachment senza status valido', () => {
+  it('should ignore attachment message without valid status', () => {
     let mockCmd: any = {
       onReciveAttachment: undefined,
       run: function () {
@@ -572,7 +575,7 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
     }).not.toThrow();
   });
 
-  it('non dovrebbe chiamare onConnectStop se status.Ok è undefined', () => {
+  it('should not call onConnectStop if status.Ok is undefined', () => {
     let mockCmd: any = {
       onReciveConnectStop: undefined,
       run: function () {
@@ -589,7 +592,7 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
     expect(onConnectStop).not.toHaveBeenCalled();
   });
 
-  it('dovrebbe ignorare dati binari se onData è undefined', () => {
+  it('should ignore binary data if onData is undefined', () => {
     let mockCmd: any = {
       onReciveBinary: undefined,
       run: function () {
@@ -603,7 +606,7 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
       service.Connect("p", "s", {}, false, "tok");
     }).not.toThrow();
   });
-  it('non dovrebbe chiamare onConnectStart se non è definito', () => {
+  it('should not call onConnectStart if not defined', () => {
     let mockCmd: any = {
       onReciveConnectStart: undefined,
       run: function () {
@@ -618,7 +621,7 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
     }).not.toThrow();
   });
 
-  it('non dovrebbe chiamare onBinaryHeader se non è definito', () => {
+  it('should not call onBinaryHeader if not defined', () => {
     let mockCmd: any = {
       onReciveBinaryHeader: undefined,
       run: function () {
@@ -633,7 +636,7 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
     }).not.toThrow();
   });
 
-  it('non dovrebbe crashare se Connect fallisce ma onError è undefined', () => {
+  it('should not crash if Connect fails and onError is undefined', () => {
     let mockCmd: any = {
       onReciveConnectBegin: undefined,
       run: function () {
@@ -648,7 +651,7 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
     }).not.toThrow();
   });
 
-   it('dovrebbe chiamare solo onConnectBegin se è l\'unico callback fornito', () => {
+   it('should call only onConnectBegin if it is the only callback provided', () => {
     const mockOkList = ["tutto ok"];
 
     let mockCmd: any = {
@@ -666,7 +669,8 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
 
     expect(onConnectBegin).toHaveBeenCalledWith(mockOkList);
   });
-  it('non dovrebbe crashare se attachment fallisce ma onError è assente', () => {
+
+  it('should not crash if attachment fails and onError is missing', () => {
     let mockCmd: any = {
       onReciveAttachment: undefined,
       run: function () {
@@ -681,7 +685,7 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
     }).not.toThrow();
   });
 
-  it('non dovrebbe chiamare onAttachmentInfo se non è fornito', () => {
+  it('should not call onAttachmentInfo if not provided', () => {
     let mockCmd: any = {
       onReciveAttachmentInfo: undefined,
       run: function () {
@@ -696,7 +700,7 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
     }).not.toThrow();
   });
 
-  it('non dovrebbe chiamare onData se non è fornito', () => {
+  it('should not call onData if not provided', () => {
     let mockCmd: any = {
       onReciveUndecodedBinary: undefined,
       run: function () {
@@ -711,7 +715,7 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
     }).not.toThrow();
   });
 
-  it('dovrebbe chiamare onAttachment anche se Ok è stringa vuota', () => {
+  it('should call onAttachment even if Ok is an empty string', () => {
     const onAttachment = jasmine.createSpy('onAttachment');
 
     let mockCmd: any = {
@@ -728,7 +732,7 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
     expect(onAttachment).toHaveBeenCalled();
   });
 
-  it('dovrebbe gestire run vuoto in GetAttachment senza errori', () => {
+  it('should handle empty run in GetAttachment without errors', () => {
     let mockCmd: any = {
       run: () => {}
     };
@@ -739,7 +743,8 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
       service.GetAttachment("problema1");
     }).not.toThrow();
   });
-  it('non dovrebbe emettere evento se lo stato è già impostato', () => {
+
+  it('should not emit event if state is already set', () => {
     service.updateState(ApiState.Idle);
 
     const spy = jasmine.createSpy('onApiStateChange');
@@ -750,7 +755,7 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
     expect(spy).not.toHaveBeenCalled();
   });
 
-  it('dovrebbe emettere evento se lo stato cambia', () => {
+  it('should emit event if state changes', () => {
     const spy = jasmine.createSpy('onApiStateChange');
     service.onApiStateChange.subscribe(spy);
 
@@ -759,7 +764,7 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
     expect(spy).toHaveBeenCalledWith(ApiState.Good);
   });
 
-  it('dovrebbe emettere solo se stateIdle cambia stato', () => {
+  it('should emit only if stateIdle changes the state', () => {
     service.updateState(ApiState.Bad);
 
     const spy = jasmine.createSpy('onApiStateChange');
@@ -770,7 +775,7 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
     expect(spy).toHaveBeenCalledWith(ApiState.Idle);
   });
 
-  it('non dovrebbe emettere due volte lo stesso stato', () => {
+  it('should not emit same state twice', () => {
     service.stateBad();
 
     const spy = jasmine.createSpy('onApiStateChange');
@@ -781,7 +786,7 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
     expect(spy).not.toHaveBeenCalled();
   });
 
-  it('dovrebbe emettere evento per ogni cambio stato tramite stateX()', () => {
+  it('should emit event for every state change via stateX()', () => {
     const spy = jasmine.createSpy('onApiStateChange');
     service.onApiStateChange.subscribe(spy);
 
@@ -794,12 +799,12 @@ it('dovrebbe restituire "" se getCurrentProject è undefined', () => {
     expect(spy).toHaveBeenCalledWith(ApiState.Bad);
     expect(spy.calls.count()).toBe(3);
   });
-  it('dovrebbe rifiutare URL non valido (throws in try)', () => {
+  it('should reject invalid URL (throws in try block)', () => {
     const result = service.setUrl("ht!tp://@@");
     expect(result).toBeFalse();
   });
 
-  it('dovrebbe rifiutare protocollo non ws/wss', () => {
+  it('should reject non-ws/wss protocol', () => {
     const result = service.setUrl("http://localhost:8080");
     expect(result).toBeFalse();
   });

@@ -34,7 +34,7 @@ describe('TutorialComponent', () => {
   // Default returns
   tutorialServiceSpy.getCachedTutorial.and.returnValue('false');
   tutorialServiceSpy.getSizeTutorial.and.returnValue(10);
-  tutorialServiceSpy.nextTutorial.and.stub(); // Nuk bën asgjë, thjesht regjistron thirrjen
+  tutorialServiceSpy.nextTutorial.and.stub(); // nothing but register the call
   tutorialServiceSpy.previousTutorial.and.stub();
   tutorialServiceSpy.closeTutorial.and.stub();
 
@@ -155,7 +155,7 @@ it('should call nextTutorial(-1) when no cached tutorial', fakeAsync(() => {
   expect(service.nextTutorial).toHaveBeenCalledWith(-1);
 }));
 it('should set the current tutorial index when setIndex is called', () => {
-  expect(component.indexCurrentTutorial).toBe(-1); // fillimisht
+  expect(component.indexCurrentTutorial).toBe(-1); // inizialmente
   component.setIndex(3);
   expect(component.indexCurrentTutorial).toBe(3);
 });
@@ -180,12 +180,12 @@ it('should call closeTutorial if indexCurrentTutorial is last index', () => {
 });
 it('should call previousTutorial and not disable back button if index > 0', () => {
   component.indexCurrentTutorial = 2;
-  component.backButtonDisabled = true; // fillimisht true për të vërtetuar që ndryshon
+  component.backButtonDisabled = true; // starts true to see if it changes
 
   component.prevTutorialButton();
 
   expect(service.previousTutorial).toHaveBeenCalledWith(2);
-  expect(component.backButtonDisabled).toBeFalse(); // kjo do të dështojë nëse nuk ndryshohet manualisht
+  expect(component.backButtonDisabled).toBeFalse(); // it will fail if not change manually
 });
 
 it('should disable back button when index is 0', () => {

@@ -83,7 +83,7 @@ it('should emit different notification types', (done) => {
 });
 it('should emit notification with custom NotificationType.Default', (done) => {
   service.onNotification.subscribe((notification) => {
-    expect(notification.type).toBe(NotificationType.Default); // që është Info
+    expect(notification.type).toBe(NotificationType.Default); // Info
     done();
   });
 
@@ -95,7 +95,7 @@ it('should default type to Info when not provided', (done) => {
     done();
   });
 
-  // type nuk jepet → duhet të përdorë default
+  // type not gived so use default
   service.sendNotification('NoType', 'This should default to Info');
 });
 it('should not throw if no subscriber is attached', () => {
@@ -113,7 +113,7 @@ it('should emit and store a default type when type is not provided', (done) => {
   expect(service.history[service.history.length - 1].type).toBe(NotificationType.Info);
 });
 it('should store notification even if no subscriber is listening', () => {
-  // Këtu nuk ka .subscribe()
+  // there is no .subscribe()
   service.sendNotification('No listener', 'Still stored');
   expect(service.history.length).toBeGreaterThan(0);
   expect(service.history[service.history.length - 1].title).toBe('No listener');

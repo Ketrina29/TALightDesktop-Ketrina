@@ -90,7 +90,7 @@ it('should set isConnected to false and navigate to /home', () => {
   const fakeApi = jasmine.createSpyObj('ApiService', ['setUrl']);
   const localService = new ConnectionManagerService(routerSpy, fakeApi);
 
-  (localService as any)._isConnected = true; // workaround për readonly
+  (localService as any)._isConnected = true; // workaround per readonly
   localService.disconnect();
 
   expect(localService.isConnected).toBeFalse();

@@ -13,7 +13,7 @@ describe('MonacoEditorWidgetComponent', () => {
       declarations: [MonacoEditorWidgetComponent],
       imports: [
         FormsModule, MonacoEditorModule.forRoot({
-    baseUrl: 'assets', // ose 'assets/monaco' sipas konfigurimit tënd
+    baseUrl: 'assets', 
     defaultOptions: { scrollBeyondLastLine: false },
     onMonacoLoad: () => {}
   })
@@ -59,7 +59,7 @@ it('should set file content when file is selected', () => {
     content: 'initial'
   };
 
-  component['\_selectedFile'] = mockFile; // ⬅️ fusim direkt sepse setter nuk e testojmë këtu
+  component['\_selectedFile'] = mockFile; // ⬅️ setter does not test here
   const newText = 'updated content';
 
   component.setFileContent(newText);

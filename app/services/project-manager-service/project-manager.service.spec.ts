@@ -30,7 +30,7 @@ describe('ProjectManagerService', () => {
   });
 
   it('should throw error if current project is not set', () => {
-    // E fshin projektin aktual
+    // delete the actual project
     (service as any).currentProjectEnv = null;
     expect(() => service.getCurrentProject()).toThrowError('No project selected');
   });
@@ -45,20 +45,18 @@ it('should return sorted list of project IDs', () => {
 it('should create and store a new project environment when loading from storage if not existing', async () => {
   const service = TestBed.inject(ProjectManagerService);
 
-  // Simulojmë që kemi një ID në storage
+  // Simulate ID in the storage
   const fakeId = 99;
   (service as any).projectsEnvironment.set(fakeId, null);
 
-  // Shtojmë një spy për createProject për të kontrolluar nëse thirret
+  // add spy for createProject to check if is being called
   const createSpy = spyOn<any>(service, 'createProject').and.callThrough();
 
-  // Thirrja që duhet të krijojë një projekt të ri nëse është null
+ 
   await service.setCurrent(fakeId);
 
-  // Kontrollojmë që createProject është thirrur
   expect(createSpy).toHaveBeenCalled();
 
-  // Kontrollojmë që projekti është ruajtur
   const envMap = (service as any).projectsEnvironment;
   expect(envMap.get(fakeId)).toBeDefined();
 });
@@ -89,15 +87,15 @@ it('should emit currentProjectChanged when project becomes loaded after mountCha
   service.addProject();
   const env = service.getCurrentProject();
 
-  // Fillimisht i panjohur
+  // is unknown in the start
   env.isLoaded = false;
 
   const driver = service.getCurrentDriver();
   const emitSpy = spyOn(service.currentProjectChanged, 'emit');
 
-  // Simulo ngarkimin pas `onLoaded.emit`
+  // Simulate `onLoaded.emit`
   driver.onMountChanged.emit();
-  env.onLoaded.emit();  // kjo do të thërrasë again emit nga subscribe
+  env.onLoaded.emit();  // this is going to call again emit from subscribe
 
   expect(emitSpy).toHaveBeenCalled();
 });
@@ -105,8 +103,6 @@ it('should emit currentProjectChanged when project becomes loaded after mountCha
 });
 
 
-
-// Test për ProjectConfig
 describe('ProjectConfig', () => {
   it('should create default config and check default name', () => {
     const config = new ProjectConfig();
@@ -115,7 +111,6 @@ describe('ProjectConfig', () => {
   });
 });
 
-// Test për ProjectEnvironment
 class MockDriver {
   exists = jasmine.createSpy().and.returnValue(Promise.resolve(true));
   readFile = jasmine.createSpy().and.returnValue(Promise.resolve(JSON.stringify(ProjectConfig.defaultConfig)));
@@ -201,11 +196,9 @@ describe('ProjectManagerService – compiler integration', () => {
 
     service = TestBed.inject(ProjectManagerService);
 
-    // Simulo që një projekt është aktualisht aktiv
     (service as any).currentProjectEnv = fakeEnv;
     (service as any).currentProjectEnvId = 1;
 
-    // Simulo aktivizimin e ngjarjeve
     fakeDriver.onWorkerReady.emit();
   });
 
